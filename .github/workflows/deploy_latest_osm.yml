@@ -1,0 +1,55 @@
+name: Deploy Latest OpenStreetMap Website
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy-latest-osm:
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: us-east-1 # Update as needed
+      ECR_REPO: ${{ secrets.ECR_REPO }} # Set this secret to your ECR repo URL
+      IMAGE_TAG: latest
+      OSM_REPO_URL: https://github.com/openstreetmap/openstreetmap-website.git
+      OSM_CLONE_DIR: openstreetmap-website
+    steps:
+      - name: Checkout pipeline repo
+        uses: actions/checkout@v4
+
+      - name: Clone latest OSM website
+        run: |
+          git clone --depth 1 "$OSM_REPO_URL" "$OSM_CLONE_DIR"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build Docker image
+        run: |
+          docker build -t "$ECR_REPO:$IMAGE_TAG" "$OSM_CLONE_DIR"
+
+      - name: Push Docker image to ECR
+        run: |
+          docker push "$ECR_REPO:$IMAGE_TAG"
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
+        env:
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          KEY_NAME: ${{ secrets.KEY_NAME }}
+          ACCOUNT_ID: ${{ secrets.ACCOUNT_ID }}
