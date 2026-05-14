@@ -26,7 +26,7 @@ resource "aws_lb_listener" "https" {
   load_balancer_arn = aws_lb.app_alb.arn
   port              = "443"
   protocol          = "HTTPS"
-  ssl_policy        = "ELBSecurityPolicy-TLS-1-2-2017-01"
+  ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
   certificate_arn   = aws_acm_certificate.main[0].arn
 
   default_action {
@@ -35,17 +35,6 @@ resource "aws_lb_listener" "https" {
   }
 
   depends_on = [aws_acm_certificate.main]
-}
-
-# Update security group to allow HTTPS
-resource "aws_security_group_rule" "alb_https_ingress" {
-  count             = var.domain_name != "" ? 1 : 0
-  type              = "ingress"
-  from_port         = 443
-  to_port           = 443
-  protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
-  security_group_id = aws_security_group.alb_sg.id
 }
 
 # Optional: Redirect HTTP to HTTPS

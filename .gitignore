@@ -5,8 +5,10 @@
 *.tfstate
 *.tfstate.backup
 tf.plan
-.terraform.lock.hcl
 
 # Local env files
 .env
 .env.local
+
+# LocalStack runtime/cache material
+localstack-data/

@@ -2,17 +2,18 @@ name: Deploy Latest OpenStreetMap Website
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
+
+permissions:
+  contents: read
+  id-token: write
 
 jobs:
   deploy-latest-osm:
     runs-on: ubuntu-latest
     env:
-      AWS_REGION: us-east-1 # Update as needed
+      AWS_REGION: ${{ secrets.AWS_REGION }}
       ECR_REPO: ${{ secrets.ECR_REPO }} # Set this secret to your ECR repo URL
-      IMAGE_TAG: latest
+      IMAGE_TAG: ${{ github.sha }}
       OSM_REPO_URL: https://github.com/openstreetmap/openstreetmap-website.git
       OSM_CLONE_DIR: openstreetmap-website
     steps:
@@ -26,8 +27,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Login to Amazon ECR
@@ -43,13 +43,24 @@ jobs:
           docker push "$ECR_REPO:$IMAGE_TAG"
 
       - name: Terraform Init
-        run: terraform init
+        run: terraform -chdir=terraform init
 
-      - name: Terraform Apply
-        run: terraform apply -auto-approve
+      - name: Terraform Plan
+        run: |
+          terraform -chdir=terraform plan \
+            -out=tf.plan \
+            -var="db_password=${DB_PASSWORD}" \
+            -var="db_username=${DB_USERNAME}" \
+            -var="db_name=${DB_NAME}" \
+            -var="key_name=${KEY_NAME}" \
+            -var="account_id=${ACCOUNT_ID}" \
+            -var="image_tag=${IMAGE_TAG}"
         env:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           DB_USERNAME: ${{ secrets.DB_USERNAME }}
           DB_NAME: ${{ secrets.DB_NAME }}
           KEY_NAME: ${{ secrets.KEY_NAME }}
           ACCOUNT_ID: ${{ secrets.ACCOUNT_ID }}
+
+      - name: Terraform Apply
+        run: terraform -chdir=terraform apply tf.plan

@@ -1,7 +1,7 @@
 # CloudWatch Log Group for ECS container logs
 resource "aws_cloudwatch_log_group" "ecs_logs" {
   name              = "/ecs/openstreetmap-website"
-  retention_in_days = 7
+  retention_in_days = 30
 
   tags = {
     Environment = "production"
@@ -12,7 +12,7 @@ resource "aws_cloudwatch_log_group" "ecs_logs" {
 # CloudWatch Log Group for VPC Flow Logs
 resource "aws_cloudwatch_log_group" "vpc_flow_logs" {
   name              = "/aws/vpc/openstreetmap"
-  retention_in_days = 7
+  retention_in_days = 30
 }
 
 # IAM role for VPC Flow Logs
@@ -43,13 +43,11 @@ resource "aws_iam_role_policy" "vpc_flow_logs_policy" {
       {
         Effect = "Allow"
         Action = [
-          "logs:CreateLogGroup",
           "logs:CreateLogStream",
           "logs:PutLogEvents",
-          "logs:DescribeLogGroups",
           "logs:DescribeLogStreams"
         ]
-        Resource = "*"
+        Resource = "${aws_cloudwatch_log_group.vpc_flow_logs.arn}:*"
       }
     ]
   })
@@ -60,12 +58,30 @@ resource "aws_flow_log" "main" {
   iam_role_arn    = aws_iam_role.vpc_flow_logs_role.arn
   log_destination = aws_cloudwatch_log_group.vpc_flow_logs.arn
   traffic_type    = "ALL"
-  vpc_id          = aws_vpc.main.id
+  vpc_id          = module.network.vpc_id
 }
 
 # S3 bucket for ALB access logs
 resource "aws_s3_bucket" "alb_logs" {
   bucket = "openstreetmap-alb-logs-${random_string.bucket_suffix.result}"
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "alb_logs" {
+  bucket = aws_s3_bucket.alb_logs.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+resource "aws_s3_bucket_versioning" "alb_logs" {
+  bucket = aws_s3_bucket.alb_logs.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
 }
 
 resource "aws_s3_bucket_lifecycle_configuration" "alb_logs_lifecycle" {
@@ -103,13 +119,19 @@ resource "aws_s3_bucket_policy" "alb_logs_policy" {
           AWS = "arn:aws:iam::${data.aws_elb_service_account.main.id}:root"
         }
         Action   = "s3:PutObject"
-        Resource = "${aws_s3_bucket.alb_logs.arn}/*"
+        Resource = "${aws_s3_bucket.alb_logs.arn}/AWSLogs/${data.aws_caller_identity.current.account_id}/*"
+        Condition = {
+          StringEquals = {
+            "s3:x-amz-acl" = "bucket-owner-full-control"
+          }
+        }
       }
     ]
   })
 }
 
 data "aws_elb_service_account" "main" {}
+data "aws_caller_identity" "current" {}
 
 # CloudWatch alarms for ECS
 resource "aws_cloudwatch_metric_alarm" "ecs_cpu_high" {

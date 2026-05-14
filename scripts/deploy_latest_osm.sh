@@ -1,7 +1,7 @@
 #!/bin/bash
 # This script pulls the latest OpenStreetMap website code, builds a Docker image, pushes it to ECR, and triggers ECS deployment.
 
-set -e
+set -euo pipefail
 
 # ---
 # Production-ready: All variables are set via environment variables or script arguments.
@@ -13,7 +13,11 @@ OSM_CLONE_DIR="${OSM_CLONE_DIR:-/tmp/openstreetmap-website}"
 AWS_REGION="${AWS_REGION:?AWS_REGION environment variable must be set}"
 AWS_ACCOUNT_ID="${AWS_ACCOUNT_ID:?AWS_ACCOUNT_ID environment variable must be set}"
 ECR_REPO="${ECR_REPO:-$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/openstreetmap-website}"
-IMAGE_TAG="${IMAGE_TAG:-latest}"
+IMAGE_TAG="${IMAGE_TAG:?IMAGE_TAG must be set to an immutable tag, such as a git SHA}"
+if [ "$IMAGE_TAG" = "latest" ]; then
+  echo "IMAGE_TAG must not be 'latest'; use an immutable tag such as a git SHA." >&2
+  exit 1
+fi
 
 # Print configuration for verification
 echo "Using configuration:"
@@ -26,7 +30,7 @@ echo "  IMAGE_TAG=$IMAGE_TAG"
 
 # 1. Clone or update the OSM website repo
 if [ -d "$OSM_CLONE_DIR" ]; then
-  git -C "$OSM_CLONE_DIR" pull
+  git -C "$OSM_CLONE_DIR" pull --ff-only
 else
   git clone "$OSM_REPO_URL" "$OSM_CLONE_DIR"
 fi
@@ -44,6 +48,7 @@ docker push "$ECR_REPO:$IMAGE_TAG"
 # 5. Trigger ECS deployment (Terraform apply)
 cd "${OLDPWD:-$PWD}"
 cd "$(dirname "$0")/.."
-terraform apply -auto-approve
+terraform plan -out=tf.plan -var="image_tag=$IMAGE_TAG"
+terraform apply tf.plan
 
 echo "Deployment triggered with the latest OpenStreetMap website code."

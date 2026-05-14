@@ -33,10 +33,10 @@ resource "aws_iam_role_policy_attachment" "ecs_task_execution_attach" {
 resource "aws_lb" "app_alb" {
   name               = "openstreetmap-alb"
   load_balancer_type = "application"
-  subnets            = [aws_subnet.public_subnet_1.id, aws_subnet.public_subnet_2.id]
+  subnets            = module.network.public_subnet_ids
   security_groups    = [aws_security_group.alb_sg.id]
 
-  enable_deletion_protection       = false
+  enable_deletion_protection       = var.enable_alb_deletion_protection
   enable_http2                     = true
   enable_cross_zone_load_balancing = true
 
@@ -52,7 +52,7 @@ resource "aws_lb_target_group" "app_tg" {
   name                 = "openstreetmap-tg"
   port                 = 3000
   protocol             = "HTTP"
-  vpc_id               = aws_vpc.main.id
+  vpc_id               = module.network.vpc_id
   target_type          = "ip"
   deregistration_delay = 30
 
@@ -90,6 +90,7 @@ resource "aws_ecs_task_definition" "app" {
   cpu                      = "512"
   memory                   = "1024"
   execution_role_arn       = aws_iam_role.ecs_task_execution.arn
+  task_role_arn            = aws_iam_role.ecs_task.arn
 
   container_definitions = jsonencode([
     {
@@ -136,7 +137,7 @@ resource "aws_ecs_service" "app" {
   platform_version = "LATEST"
 
   network_configuration {
-    subnets          = [aws_subnet.private_subnet_1.id, aws_subnet.private_subnet_2.id]
+    subnets          = module.network.private_subnet_ids
     security_groups  = [aws_security_group.ecs_sg.id]
     assign_public_ip = false
   }
@@ -159,7 +160,7 @@ resource "aws_ecs_service" "app" {
 
   health_check_grace_period_seconds = 60
 
-  enable_execute_command = true
+  enable_execute_command = var.enable_ecs_execute_command
 
   depends_on = [aws_lb_listener.http]
 }
