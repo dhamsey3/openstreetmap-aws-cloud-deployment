@@ -1,27 +1,3 @@
-            - name: Lint Dockerfile (hadolint)
-              uses: hadolint/hadolint-action@v3.1.0
-              with:
-                dockerfile: openstreetmap-website/Dockerfile
-
-            - name: Lint Ansible (ansible-lint)
-              run: |
-                pip install ansible-lint
-                ansible-lint ansible/
-      - name: Terraform Fmt (Lint)
-        run: |
-          cd terraform
-          terraform fmt -check -recursive
-
-      - name: Terraform Validate
-        run: |
-          cd terraform
-          terraform validate
-
-      - name: Terraform Security Check (tfsec)
-        uses: aquasecurity/tfsec-action@v1.0.3
-        with:
-          working_directory: terraform
-#
 # ---
 # Modern DevOps & CI/CD Highlights
 # - Multi-stage pipeline: infrastructure validation, integration tests, build, push, and deploy
@@ -46,15 +22,44 @@ on:
         default: 'pr'
 
 permissions:
-  contents: write
+  contents: read
   id-token: write
-  packages: write
-  actions: write
+
+env:
+  OSM_REPO: openstreetmap/openstreetmap-website
+  OSM_PATH: openstreetmap-website
 
 jobs:
+  static-checks:
+    name: Static hardening checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.5.7
+
+      - name: Terraform Fmt
+        run: terraform -chdir=terraform fmt -check -recursive
+
+      - name: Terraform Init
+        run: terraform -chdir=terraform init -backend=false
+
+      - name: Terraform Validate
+        run: terraform -chdir=terraform validate
+
+      - name: Terraform Security Check
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          working_directory: terraform
+
   localstack-tests:
     name: Test Infrastructure with LocalStack
     runs-on: ubuntu-latest
+    needs: static-checks
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -71,28 +76,17 @@ jobs:
           done
 
       - name: Install Terraform
-        uses: hashicorp/setup-terraform@v2
+        uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.5.0
+          terraform_version: 1.5.7
 
       - name: Validate Terraform with LocalStack
         run: |
           cd terraform
-          cp provider.localstack.tf provider.tf.backup
+          cp provider.localstack.tf.example provider.localstack.tf
           terraform init
           terraform validate
-      - name: Terraform Plan (dev/at/pr)
-        run: |
-          cd terraform
-          if [ "${{ github.ref_name }}" = "main" ]; then
-            ENV=dev
-          elif [ "${{ github.ref_name }}" = "at" ]; then
-            ENV=at
-          else
-            ENV=${{ github.event.inputs.environment || 'dev' }}
-          fi
-          terraform workspace select $ENV || terraform workspace new $ENV
-          terraform plan -var-file="envs/$ENV.tfvars"
+
   deploy-pr:
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'pr'
     needs: build-and-push
@@ -148,6 +142,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Checkout OpenStreetMap website
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.OSM_REPO }}
+          path: ${{ env.OSM_PATH }}
 
       - name: Create docker network
         run: |
@@ -208,6 +208,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Checkout OpenStreetMap website
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.OSM_REPO }}
+          path: ${{ env.OSM_PATH }}
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -255,4 +261,3 @@ jobs:
           task-definition: ${{ steps.register-task.outputs.task-definition }}
           service: openstreetmap-service
           cluster: openstreetmap-ecs-cluster
-

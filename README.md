@@ -88,7 +88,7 @@ terraform apply -var-file="envs/dev.tfvars"
 
 - `terraform/` — All Terraform code and modules
 - `terraform/envs/` — Environment-specific variable files
-- `openstreetmap-website/` — Application source code
+- `openstreetmap-website/` — External application source cloned locally or by CI when needed
 - `.github/workflows/ci-ecr-deploy.yml` — CI/CD pipeline
 - `scripts/` — Deployment and utility scripts
 

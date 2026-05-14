@@ -1,25 +1,11 @@
-# Provider configuration for LocalStack
-# This overrides the main provider.tf when using LocalStack
-
-terraform {
-  required_version = ">= 1.0"
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = ">= 3.0"
-    }
-    random = {
-      source  = "hashicorp/random"
-      version = ">= 3.0"
-    }
-  }
-}
+# Provider configuration for LocalStack.
+# Copy this file to provider.localstack.tf only for local simulation runs.
 
 provider "aws" {
-
+  alias  = "localstack"
   region = var.region
-  # WARNING: The following credentials are for LocalStack/local development only.
-  # Never use static or test credentials in production!
+
+  # WARNING: These credentials are for LocalStack/local development only.
   access_key                  = "test"
   secret_key                  = "test"
   skip_credentials_validation = true

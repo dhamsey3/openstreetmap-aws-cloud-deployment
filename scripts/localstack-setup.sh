@@ -1,15 +1,15 @@
 #!/bin/bash
 # Setup script for LocalStack development environment
 
-set -e
+set -euo pipefail
 
-echo "🚀 Starting LocalStack..."
-docker-compose -f docker-compose.localstack.yml up -d
+echo "Starting LocalStack..."
+docker compose -f docker-compose.localstack.yml up -d
 
-echo "⏳ Waiting for LocalStack to be ready..."
+echo "Waiting for LocalStack to be ready..."
 timeout 60 bash -c 'until curl -s http://localhost:4566/_localstack/health | grep -q "running"; do sleep 2; done'
 
-echo "✅ LocalStack is ready!"
+echo "LocalStack is ready."
 
 # Export environment variables for Terraform
 export AWS_ACCESS_KEY_ID=test
@@ -30,4 +30,4 @@ echo "  terraform init"
 echo "  terraform plan"
 echo ""
 echo "To stop LocalStack:"
-echo "  docker-compose -f docker-compose.localstack.yml down"
+echo "  docker compose -f docker-compose.localstack.yml down"

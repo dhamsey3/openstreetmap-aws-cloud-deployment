@@ -61,7 +61,7 @@ resource "aws_security_group" "web_sg" {
 resource "aws_security_group" "alb_sg" {
   name        = "openstreetmap-alb-sg"
   description = "Security group for Application Load Balancer"
-  vpc_id      = aws_vpc.main.id
+  vpc_id      = module.network.vpc_id
 
   ingress {
     description = "HTTP from Internet"
@@ -76,7 +76,7 @@ resource "aws_security_group" "alb_sg" {
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [var.http_cidr]
   }
 
   egress {
@@ -94,7 +94,7 @@ resource "aws_security_group" "alb_sg" {
 
 # Security group for ECS tasks
 resource "aws_security_group" "ecs_sg" {
-  vpc_id = aws_vpc.main.id
+  vpc_id = module.network.vpc_id
 
   # allow traffic from the ALB
   ingress {
@@ -114,7 +114,7 @@ resource "aws_security_group" "ecs_sg" {
 
 # Security group for RDS
 resource "aws_security_group" "db_sg" {
-  vpc_id = aws_vpc.main.id
+  vpc_id = module.network.vpc_id
 
   ingress {
     from_port       = 5432
@@ -134,6 +134,7 @@ resource "aws_security_group" "db_sg" {
 # Create an RDS instance for the database
 resource "aws_db_instance" "osm_db" {
   allocated_storage      = 20
+  max_allocated_storage  = 100
   engine                 = "postgres"
   engine_version         = "13.15"
   instance_class         = "db.t3.micro"
@@ -143,6 +144,8 @@ resource "aws_db_instance" "osm_db" {
   db_name                = var.db_name
   vpc_security_group_ids = [aws_security_group.db_sg.id]
   db_subnet_group_name   = aws_db_subnet_group.main.name
+  publicly_accessible    = false
+  deletion_protection    = true
 
   # Production settings
   multi_az                  = true
@@ -168,17 +171,14 @@ resource "aws_db_instance" "osm_db" {
 
   depends_on = [
     aws_db_subnet_group.main,
-    aws_security_group.web_sg
+    aws_security_group.db_sg
   ]
 }
 
 # Create a DB subnet group with a unique name
 resource "aws_db_subnet_group" "main" {
-  name = "main-${random_string.bucket_suffix.result}"
-  subnet_ids = [
-    aws_subnet.private_subnet_1.id,
-    aws_subnet.private_subnet_2.id
-  ]
+  name       = "main-${random_string.bucket_suffix.result}"
+  subnet_ids = module.network.private_subnet_ids
 
   tags = {
     Name = "main-${random_string.bucket_suffix.result}"

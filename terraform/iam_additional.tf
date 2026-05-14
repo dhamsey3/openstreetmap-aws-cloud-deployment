@@ -21,6 +21,23 @@ resource "aws_iam_role_policy_attachment" "rds_monitoring_attach" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonRDSEnhancedMonitoringRole"
 }
 
+resource "aws_iam_role" "ecs_task" {
+  name = "openstreetmap-ecs-task-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "ecs-tasks.amazonaws.com"
+        }
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+}
+
 # Update ECS task execution role to read secrets and write logs
 resource "aws_iam_role_policy" "ecs_task_execution_secrets" {
   name = "ecs-task-execution-secrets-policy"
@@ -32,8 +49,7 @@ resource "aws_iam_role_policy" "ecs_task_execution_secrets" {
       {
         Effect = "Allow"
         Action = [
-          "secretsmanager:GetSecretValue",
-          "kms:Decrypt"
+          "secretsmanager:GetSecretValue"
         ]
         Resource = [
           aws_secretsmanager_secret.db_credentials.arn,
