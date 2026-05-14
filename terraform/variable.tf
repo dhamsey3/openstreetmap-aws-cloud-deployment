@@ -1,3 +1,8 @@
+variable "http_cidr" {
+  description = "CIDR block for HTTP access (e.g., office IP or ALB SG)"
+  type        = string
+  default     = "0.0.0.0/0" # Change this in production!
+}
 variable "admin_cidr" {
   description = "CIDR block for SSH admin access (e.g., your office IP)"
   type        = string

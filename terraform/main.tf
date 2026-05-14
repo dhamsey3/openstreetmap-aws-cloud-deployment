@@ -41,12 +41,12 @@ resource "aws_security_group" "web_sg" {
     cidr_blocks = [var.admin_cidr]
   }
 
-  # TODO: Restrict HTTP (80) to only required sources in production
+  # Restrict HTTP (80) to a trusted CIDR (e.g., office IP or ALB SG)
   ingress {
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [var.http_cidr]
   }
 
   egress {
