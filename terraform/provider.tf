@@ -1,7 +1,7 @@
 # Terraform provider configuration with default tags
 provider "aws" {
   region = var.region
-  
+
   default_tags {
     tags = {
       Environment = "production"

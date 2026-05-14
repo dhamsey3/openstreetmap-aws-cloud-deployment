@@ -17,9 +17,9 @@ resource "aws_iam_role" "ecs_task_execution" {
     Version = "2012-10-17",
     Statement = [
       {
-        Effect = "Allow",
+        Effect    = "Allow",
         Principal = { Service = "ecs-tasks.amazonaws.com" },
-        Action = "sts:AssumeRole"
+        Action    = "sts:AssumeRole"
       }
     ]
   })
@@ -35,25 +35,25 @@ resource "aws_lb" "app_alb" {
   load_balancer_type = "application"
   subnets            = [aws_subnet.public_subnet_1.id, aws_subnet.public_subnet_2.id]
   security_groups    = [aws_security_group.alb_sg.id]
-  
-  enable_deletion_protection = false
-  enable_http2              = true
+
+  enable_deletion_protection       = false
+  enable_http2                     = true
   enable_cross_zone_load_balancing = true
-  
+
   access_logs {
     bucket  = aws_s3_bucket.alb_logs.id
     enabled = true
   }
-  
+
   depends_on = [aws_s3_bucket_policy.alb_logs_policy]
 }
 
 resource "aws_lb_target_group" "app_tg" {
-  name     = "openstreetmap-tg"
-  port     = 3000
-  protocol = "HTTP"
-  vpc_id   = aws_vpc.main.id
-  target_type = "ip"
+  name                 = "openstreetmap-tg"
+  port                 = 3000
+  protocol             = "HTTP"
+  vpc_id               = aws_vpc.main.id
+  target_type          = "ip"
   deregistration_delay = 30
 
   health_check {
@@ -129,15 +129,15 @@ resource "aws_ecs_task_definition" "app" {
 }
 
 resource "aws_ecs_service" "app" {
-  name            = "openstreetmap-service"
-  cluster         = aws_ecs_cluster.app.id
-  task_definition = aws_ecs_task_definition.app.arn
-  launch_type     = "FARGATE"
+  name             = "openstreetmap-service"
+  cluster          = aws_ecs_cluster.app.id
+  task_definition  = aws_ecs_task_definition.app.arn
+  launch_type      = "FARGATE"
   platform_version = "LATEST"
 
   network_configuration {
-    subnets         = [aws_subnet.private_subnet_1.id, aws_subnet.private_subnet_2.id]
-    security_groups = [aws_security_group.ecs_sg.id]
+    subnets          = [aws_subnet.private_subnet_1.id, aws_subnet.private_subnet_2.id]
+    security_groups  = [aws_security_group.ecs_sg.id]
     assign_public_ip = false
   }
 
@@ -158,7 +158,7 @@ resource "aws_ecs_service" "app" {
   }
 
   health_check_grace_period_seconds = 60
-  
+
   enable_execute_command = true
 
   depends_on = [aws_lb_listener.http]

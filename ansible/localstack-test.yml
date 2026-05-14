@@ -12,6 +12,8 @@
     localstack_endpoint: http://localhost:4566
     
   environment:
+    # WARNING: The following credentials are for LocalStack/local development only.
+    # Never use static or test credentials in production!
     AWS_ACCESS_KEY_ID: test
     AWS_SECRET_ACCESS_KEY: test
     AWS_DEFAULT_REGION: "{{ aws_region }}"

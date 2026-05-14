@@ -1,9 +1,49 @@
+            - name: Lint Dockerfile (hadolint)
+              uses: hadolint/hadolint-action@v3.1.0
+              with:
+                dockerfile: openstreetmap-website/Dockerfile
+
+            - name: Lint Ansible (ansible-lint)
+              run: |
+                pip install ansible-lint
+                ansible-lint ansible/
+      - name: Terraform Fmt (Lint)
+        run: |
+          cd terraform
+          terraform fmt -check -recursive
+
+      - name: Terraform Validate
+        run: |
+          cd terraform
+          terraform validate
+
+      - name: Terraform Security Check (tfsec)
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          working_directory: terraform
+#
+# ---
+# Modern DevOps & CI/CD Highlights
+# - Multi-stage pipeline: infrastructure validation, integration tests, build, push, and deploy
+# - Uses LocalStack for AWS resource simulation
+# - Dockerized test suite with coverage artifact upload
+# - Secure AWS credential handling via GitHub Actions OIDC/role assumption
+# - Immutable image tags (Git SHA) for deployments
+# - Automated ECS deployment with task definition update
+# ---
 name: CI Build and Deploy to ECR/ECS
 
 on:
   push:
     branches:
       - main
+      - at
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment (dev, at, pr)'
+        required: true
+        default: 'pr'
 
 permissions:
   contents: write
@@ -37,10 +77,48 @@ jobs:
 
       - name: Validate Terraform with LocalStack
         run: |
-          cd /home/runner/work/openstreetmap-cloud-deployment/openstreetmap-cloud-deployment
+          cd terraform
           cp provider.localstack.tf provider.tf.backup
           terraform init
           terraform validate
+      - name: Terraform Plan (dev/at/pr)
+        run: |
+          cd terraform
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            ENV=dev
+          elif [ "${{ github.ref_name }}" = "at" ]; then
+            ENV=at
+          else
+            ENV=${{ github.event.inputs.environment || 'dev' }}
+          fi
+          terraform workspace select $ENV || terraform workspace new $ENV
+          terraform plan -var-file="envs/$ENV.tfvars"
+  deploy-pr:
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'pr'
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ steps.deploy.outputs.url }}
+    steps:
+      - name: Manual approval
+        uses: trstringer/manual-approval@v1
+        with:
+          secret: ${{ secrets.GITHUB_TOKEN }}
+          approvers: ${{ github.actor }}
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-region: ${{ secrets.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+      - name: Deploy to ECS service (pr)
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ecs/task-definition.json
+          service: openstreetmap-service
+          cluster: openstreetmap-ecs-cluster
 
       - name: Set up Python
         uses: actions/setup-python@v4

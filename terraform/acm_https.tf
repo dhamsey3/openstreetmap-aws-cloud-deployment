@@ -3,7 +3,7 @@
 variable "domain_name" {
   description = "Domain name for the application (e.g., osm.example.com)"
   type        = string
-  default     = ""  # Set this in terraform.tfvars if you have a domain
+  default     = "" # Set this in terraform.tfvars if you have a domain
 }
 
 resource "aws_acm_certificate" "main" {

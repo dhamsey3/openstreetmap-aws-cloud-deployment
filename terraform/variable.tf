@@ -1,3 +1,8 @@
+variable "admin_cidr" {
+  description = "CIDR block for SSH admin access (e.g., your office IP)"
+  type        = string
+  default     = "0.0.0.0/0" # Change this in production!
+}
 variable "key_name" {
   description = "Name of the SSH key pair"
   type        = string
