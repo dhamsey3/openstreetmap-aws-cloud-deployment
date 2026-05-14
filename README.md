@@ -3,7 +3,11 @@
 
 # OpenStreetMap Cloud Deployment
 
+
 ## Architecture Diagram
+
+<details>
+<summary>Show Mermaid code</summary>
 
 ```mermaid
 graph TD
@@ -29,6 +33,7 @@ graph TD
 		Local -.->|Dev/Test| S3
 		Local -.->|Dev/Test| Secrets
 ```
+</details>
 
 This project provides a modern, secure, and scalable deployment of the OpenStreetMap website to AWS using Terraform, ECS (Fargate), and GitHub Actions. It supports local development with Docker Compose and is organized for multi-environment (dev, at, pr) workflows.
 
