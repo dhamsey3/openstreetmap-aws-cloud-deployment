@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="980" viewBox="0 0 1500 980" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1176" viewBox="0 0 1500 980" role="img" aria-labelledby="title desc">
   <title id="title">OpenStreetMap AWS Cloud Architecture</title>
   <desc id="desc">Professional AWS architecture diagram for OpenStreetMap cloud deployment. It shows users and GitHub Actions entering an AWS account, with a region, VPC, public subnets, private ECS Fargate application subnets, private RDS database subnets, and supporting AWS services including ECR, Secrets Manager, CloudWatch, S3, Auto Scaling, ACM, Internet Gateway, NAT Gateway, and VPC Flow Logs.</desc>
   <defs>
@@ -10,8 +10,8 @@
     </marker>
     <style>
       .page { fill: #f8fafc; }
-      .title { font: 700 30px Arial, sans-serif; fill: #101828; }
-      .subtitle { font: 400 14px Arial, sans-serif; fill: #475467; }
+      .title { font: 700 34px Arial, sans-serif; fill: #101828; }
+      .subtitle { font: 400 16px Arial, sans-serif; fill: #475467; }
       .boundary { fill: #ffffff; stroke: #98a2b3; stroke-width: 2; rx: 18; }
       .region { fill: #fff7ed; stroke: #fb923c; stroke-width: 2; rx: 16; }
       .vpc { fill: #f0fdf4; stroke: #22c55e; stroke-width: 2; rx: 16; }
@@ -20,11 +20,11 @@
       .zone-data { fill: #f5f3ff; stroke: #a78bfa; stroke-width: 2; rx: 14; }
       .zone-support { fill: #f8fafc; stroke: #cbd5e1; stroke-width: 2; rx: 14; }
       .node { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1.5; rx: 12; filter: drop-shadow(0 2px 4px rgba(16,24,40,.10)); }
-      .label { font: 700 15px Arial, sans-serif; fill: #344054; }
-      .small { font: 400 12px Arial, sans-serif; fill: #667085; }
-      .node-title { font: 700 14px Arial, sans-serif; fill: #101828; }
-      .node-sub { font: 400 12px Arial, sans-serif; fill: #667085; }
-      .icon { font: 700 12px Arial, sans-serif; fill: #ffffff; text-anchor: middle; dominant-baseline: middle; }
+      .label { font: 700 17px Arial, sans-serif; fill: #344054; }
+      .small { font: 400 13px Arial, sans-serif; fill: #667085; }
+      .node-title { font: 700 15px Arial, sans-serif; fill: #101828; }
+      .node-sub { font: 400 13px Arial, sans-serif; fill: #667085; }
+      .icon { font: 700 13px Arial, sans-serif; fill: #ffffff; text-anchor: middle; dominant-baseline: middle; }
       .orange { fill: #ff9900; }
       .blue { fill: #527fff; }
       .green { fill: #7aa116; }
@@ -44,25 +44,25 @@
 
   <!-- External systems -->
   <rect x="48" y="190" width="190" height="72" class="node"/>
-  <circle cx="84" cy="226" r="17" class="blue"/>
+  <circle cx="84" cy="226" r="20" class="blue"/>
   <text x="84" y="226" class="icon">USR</text>
   <text x="112" y="221" class="node-title">Users</text>
   <text x="112" y="241" class="node-sub">HTTP / HTTPS</text>
 
   <rect x="48" y="404" width="190" height="72" class="node"/>
-  <circle cx="84" cy="440" r="17" class="dark"/>
+  <circle cx="84" cy="440" r="20" class="dark"/>
   <text x="84" y="440" class="icon">GH</text>
   <text x="112" y="435" class="node-title">GitHub Actions</text>
   <text x="112" y="455" class="node-sub">Build, test, deploy</text>
 
   <rect x="48" y="520" width="190" height="72" class="node"/>
-  <circle cx="84" cy="556" r="17" fill="#7b42bc"/>
+  <circle cx="84" cy="556" r="20" fill="#7b42bc"/>
   <text x="84" y="556" class="icon">TF</text>
   <text x="112" y="551" class="node-title">Terraform</text>
   <text x="112" y="571" class="node-sub">Provision AWS infra</text>
 
   <rect x="48" y="778" width="190" height="72" class="node"/>
-  <circle cx="84" cy="814" r="17" fill="#2496ed"/>
+  <circle cx="84" cy="814" r="20" fill="#2496ed"/>
   <text x="84" y="814" class="icon">DEV</text>
   <text x="112" y="809" class="node-title">LocalStack</text>
   <text x="112" y="829" class="node-sub">Local validation</text>
@@ -94,45 +94,45 @@
 
   <!-- VPC nodes -->
   <rect x="410" y="454" width="130" height="64" class="node"/>
-  <circle cx="440" cy="486" r="16" class="green"/>
+  <circle cx="440" cy="486" r="19" class="green"/>
   <text x="440" y="486" class="icon">IGW</text>
   <text x="464" y="481" class="node-title">Internet</text>
   <text x="464" y="500" class="node-sub">Gateway</text>
 
   <rect x="410" y="574" width="130" height="64" class="node"/>
-  <circle cx="440" cy="606" r="16" class="green"/>
+  <circle cx="440" cy="606" r="19" class="green"/>
   <text x="440" y="606" class="icon">ALB</text>
   <text x="464" y="601" class="node-title">Application</text>
   <text x="464" y="620" class="node-sub">Load Balancer</text>
 
   <rect x="410" y="716" width="130" height="64" class="node"/>
-  <circle cx="440" cy="748" r="16" class="green"/>
+  <circle cx="440" cy="748" r="19" class="green"/>
   <text x="440" y="748" class="icon">NAT</text>
   <text x="464" y="743" class="node-title">NAT</text>
   <text x="464" y="762" class="node-sub">Gateway</text>
 
   <rect x="634" y="454" width="132" height="64" class="node"/>
-  <circle cx="664" cy="486" r="16" class="orange"/>
+  <circle cx="664" cy="486" r="19" class="orange"/>
   <text x="664" y="486" class="icon">ECS</text>
   <text x="688" y="481" class="node-title">ECS Cluster</text>
   <text x="688" y="500" class="node-sub">Fargate</text>
 
   <rect x="634" y="574" width="132" height="76" class="node"/>
-  <circle cx="664" cy="612" r="16" class="orange"/>
+  <circle cx="664" cy="612" r="19" class="orange"/>
   <text x="664" y="612" class="icon">APP</text>
   <text x="688" y="601" class="node-title">Rails Web Task</text>
   <text x="688" y="620" class="node-sub">Container :3000</text>
   <text x="688" y="638" class="node-sub">Desired count 1+</text>
 
   <rect x="870" y="574" width="138" height="76" class="node"/>
-  <circle cx="900" cy="612" r="16" class="purple"/>
+  <circle cx="900" cy="612" r="19" class="purple"/>
   <text x="900" y="612" class="icon">RDS</text>
   <text x="924" y="601" class="node-title">RDS PostgreSQL</text>
   <text x="924" y="620" class="node-sub">Multi-AZ</text>
   <text x="924" y="638" class="node-sub">Encrypted</text>
 
   <rect x="634" y="716" width="132" height="64" class="node"/>
-  <circle cx="664" cy="748" r="16" class="green"/>
+  <circle cx="664" cy="748" r="19" class="green"/>
   <text x="664" y="748" class="icon">LOG</text>
   <text x="688" y="743" class="node-title">VPC Flow</text>
   <text x="688" y="762" class="node-sub">Logs</text>
@@ -142,37 +142,37 @@
   <text x="1154" y="284" class="label">Regional Services</text>
 
   <rect x="1160" y="326" width="184" height="58" class="node"/>
-  <circle cx="1190" cy="355" r="15" class="orange"/>
+  <circle cx="1190" cy="355" r="18" class="orange"/>
   <text x="1190" y="355" class="icon">ECR</text>
   <text x="1214" y="350" class="node-title">Amazon ECR</text>
   <text x="1214" y="369" class="node-sub">Immutable images</text>
 
   <rect x="1160" y="410" width="184" height="58" class="node"/>
-  <circle cx="1190" cy="439" r="15" class="red"/>
+  <circle cx="1190" cy="439" r="18" class="red"/>
   <text x="1190" y="439" class="icon">SEC</text>
   <text x="1214" y="434" class="node-title">Secrets Manager</text>
   <text x="1214" y="453" class="node-sub">DB credentials</text>
 
   <rect x="1160" y="494" width="184" height="58" class="node"/>
-  <circle cx="1190" cy="523" r="15" class="purple"/>
+  <circle cx="1190" cy="523" r="18" class="purple"/>
   <text x="1190" y="523" class="icon">CW</text>
   <text x="1214" y="518" class="node-title">CloudWatch</text>
   <text x="1214" y="537" class="node-sub">Logs and alarms</text>
 
   <rect x="1160" y="578" width="184" height="58" class="node"/>
-  <circle cx="1190" cy="607" r="15" class="green"/>
+  <circle cx="1190" cy="607" r="18" class="green"/>
   <text x="1190" y="607" class="icon">S3</text>
   <text x="1214" y="602" class="node-title">S3 ALB Logs</text>
   <text x="1214" y="621" class="node-sub">Access logs</text>
 
   <rect x="1160" y="662" width="184" height="58" class="node"/>
-  <circle cx="1190" cy="691" r="15" class="orange"/>
+  <circle cx="1190" cy="691" r="18" class="orange"/>
   <text x="1190" y="691" class="icon">AS</text>
   <text x="1214" y="686" class="node-title">Auto Scaling</text>
   <text x="1214" y="705" class="node-sub">CPU, memory, requests</text>
 
   <rect x="1160" y="746" width="184" height="58" class="node"/>
-  <circle cx="1190" cy="775" r="15" class="red"/>
+  <circle cx="1190" cy="775" r="18" class="red"/>
   <text x="1190" y="775" class="icon">ACM</text>
   <text x="1214" y="770" class="node-title">ACM</text>
   <text x="1214" y="789" class="node-sub">Optional TLS cert</text>
