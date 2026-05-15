@@ -22,7 +22,7 @@ permissions:
   id-token: write
 
 env:
-  AWS_REGION: ${{ secrets.AWS_REGION }}
+  AWS_REGION: ${{ vars.AWS_REGION || secrets.AWS_REGION || 'eu-central-1' }}
   ECR_REPOSITORY: openstreetmap-website
   OSM_REPO: openstreetmap/openstreetmap-website
   OSM_REF: master

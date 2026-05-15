@@ -84,7 +84,7 @@ terraform apply -var-file="envs/dev.tfvars"
 
 ## Required GitHub Secrets for CI/CD
 
-- `AWS_REGION` — e.g. `eu-central-1`
+- `AWS_REGION` — optional; defaults to `eu-central-1` when not set
 - `AWS_ACCOUNT_ID` — your AWS account id
 - `AWS_ROLE_TO_ASSUME` — IAM role trusted by the GitHub Actions OIDC provider
 - `TF_STATE_BUCKET` — S3 bucket for Terraform remote state
