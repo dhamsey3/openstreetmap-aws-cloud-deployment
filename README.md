@@ -6,11 +6,13 @@
 
 ## Architecture Diagram
 
-An Eraser diagram-as-code version is available at [`docs/architecture.eraser`](docs/architecture.eraser). A static SVG using the official AWS Architecture Icon package is available at [`docs/architecture.svg`](docs/architecture.svg).
+The latest architecture diagram is embedded below and available as a static SVG at [`docs/architecture.svg`](docs/architecture.svg). It uses official AWS Architecture Icon package assets stored in [`docs/assets/aws-icons`](docs/assets/aws-icons).
 
 <p align="center">
   <img src="docs/architecture.svg" alt="OpenStreetMap AWS Cloud Architecture" width="100%">
 </p>
+
+The editable Eraser diagram-as-code source is available at [`docs/architecture.eraser`](docs/architecture.eraser).
 
 This project provides a modern, secure, and scalable deployment of the OpenStreetMap website to AWS using Terraform, ECS (Fargate), and GitHub Actions. It supports local development with Docker Compose and is organized for multi-environment (dev, at, pr) workflows.
 
