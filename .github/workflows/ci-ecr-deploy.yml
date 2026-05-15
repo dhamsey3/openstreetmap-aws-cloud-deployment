@@ -1,13 +1,4 @@
-# ---
-# Modern DevOps & CI/CD Highlights
-# - Multi-stage pipeline: infrastructure validation, integration tests, build, push, and deploy
-# - Uses LocalStack for AWS resource simulation
-# - Dockerized test suite with coverage artifact upload
-# - Secure AWS credential handling via GitHub Actions OIDC/role assumption
-# - Immutable image tags (Git SHA) for deployments
-# - Automated ECS deployment with task definition update
-# ---
-name: CI Build and Deploy to ECR/ECS
+name: AWS CI/CD Deploy
 
 on:
   push:
@@ -17,21 +8,30 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Target environment (dev, at, pr)'
+        description: Target environment
         required: true
-        default: 'pr'
+        default: dev
+        type: choice
+        options:
+          - dev
+          - at
+          - pr
 
 permissions:
   contents: read
   id-token: write
 
 env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  ECR_REPOSITORY: openstreetmap-website
   OSM_REPO: openstreetmap/openstreetmap-website
   OSM_PATH: openstreetmap-website
+  TF_IN_AUTOMATION: true
+  DEPLOY_ENV: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || (github.ref_name == 'at' && 'at' || 'dev') }}
 
 jobs:
   static-checks:
-    name: Static hardening checks
+    name: Static checks
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -42,103 +42,24 @@ jobs:
         with:
           terraform_version: 1.5.7
 
-      - name: Terraform Fmt
+      - name: Terraform fmt
         run: terraform -chdir=terraform fmt -check -recursive
 
-      - name: Terraform Init
+      - name: Terraform init without backend
         run: terraform -chdir=terraform init -backend=false
 
-      - name: Terraform Validate
+      - name: Terraform validate
         run: terraform -chdir=terraform validate
 
-      - name: Terraform Security Check
+      - name: Terraform security check
         uses: aquasecurity/tfsec-action@v1.0.3
         with:
           working_directory: terraform
 
-  localstack-tests:
-    name: Test Infrastructure with LocalStack
+  test:
+    name: Rails test suite
     runs-on: ubuntu-latest
     needs: static-checks
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Start LocalStack
-        run: |
-          docker-compose -f docker-compose.localstack.yml up -d
-          sleep 15
-
-      - name: Wait for LocalStack
-        run: |
-          for i in {1..30}; do
-            curl -s http://localhost:4566/_localstack/health && break || sleep 2
-          done
-
-      - name: Install Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.5.7
-
-      - name: Validate Terraform with LocalStack
-        run: |
-          cd terraform
-          cp provider.localstack.tf.example provider.localstack.tf
-          terraform init
-          terraform validate
-
-  deploy-pr:
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'pr'
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    environment:
-      name: production
-      url: ${{ steps.deploy.outputs.url }}
-    steps:
-      - name: Manual approval
-        uses: trstringer/manual-approval@v1
-        with:
-          secret: ${{ secrets.GITHUB_TOKEN }}
-          approvers: ${{ github.actor }}
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-region: ${{ secrets.AWS_REGION }}
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-      - name: Deploy to ECS service (pr)
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-        with:
-          task-definition: ecs/task-definition.json
-          service: openstreetmap-service
-          cluster: openstreetmap-ecs-cluster
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.12'
-
-      - name: Install Ansible and dependencies
-        run: |
-          pip install ansible boto3 botocore awscli-local
-          ansible-galaxy collection install community.aws:==10.0.0
-          ansible-galaxy collection install amazon.aws
-
-      - name: Test Ansible playbooks with LocalStack
-        run: |
-          cd ansible
-          ansible-playbook localstack-test.yml
-
-      - name: Stop LocalStack
-        if: always()
-        run: |
-          docker-compose -f docker-compose.localstack.yml down
-
-  test:
-    name: Run test suite in Docker
-    runs-on: ubuntu-latest
-    needs: localstack-tests
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -149,9 +70,8 @@ jobs:
           repository: ${{ env.OSM_REPO }}
           path: ${{ env.OSM_PATH }}
 
-      - name: Create docker network
-        run: |
-          docker network create ci_test_net || true
+      - name: Create Docker network
+        run: docker network create ci_test_net || true
 
       - name: Start Postgres for tests
         run: |
@@ -160,11 +80,11 @@ jobs:
             -e POSTGRES_DB=openstreetmap \
             postgres:13
 
-      - name: Build test image
-        uses: docker/setup-buildx-action@v2
+      - name: Set up buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: Build test image (with cache)
-        uses: docker/build-push-action@v4
+      - name: Build test image
+        uses: docker/build-push-action@v6
         with:
           context: openstreetmap-website
           file: openstreetmap-website/Dockerfile
@@ -173,25 +93,26 @@ jobs:
           tags: test-image:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-        env:
-          IMAGE: test-image:${{ github.sha }}
-
-      - name: Set IMAGE env for later steps
-        run: echo "IMAGE=test-image:${{ github.sha }}" >> $GITHUB_ENV
 
       - name: Wait for Postgres
         run: |
-          for i in {1..20}; do
-            docker run --rm --net ci_test_net alpine sh -c "nc -z ci-postgres 5432 && echo ok" && break || sleep 1
+          for i in {1..30}; do
+            docker run --rm --net ci_test_net alpine sh -c "nc -z ci-postgres 5432 && echo ok" && break || sleep 2
           done
 
       - name: Run migrations and tests
         env:
-          DATABASE_URL: "postgresql://postgres@ci-postgres:5432/openstreetmap"
+          DATABASE_URL: postgresql://postgres@ci-postgres:5432/openstreetmap
           RAILS_ENV: test
+          IMAGE: test-image:${{ github.sha }}
         run: |
           mkdir -p tmp/artifacts
-          docker run --rm --name ci-test-run --net ci_test_net -e DATABASE_URL=${DATABASE_URL} -e RAILS_ENV=${RAILS_ENV} -v $GITHUB_WORKSPACE/tmp/artifacts:/app/coverage ${IMAGE} bash -lc "bundle exec rails db:create db:migrate RAILS_ENV=test && bundle exec rails test:all"
+          docker run --rm --name ci-test-run --net ci_test_net \
+            -e DATABASE_URL="${DATABASE_URL}" \
+            -e RAILS_ENV="${RAILS_ENV}" \
+            -v "${GITHUB_WORKSPACE}/tmp/artifacts:/app/coverage" \
+            "${IMAGE}" \
+            bash -lc "bundle exec rails db:create db:migrate RAILS_ENV=test && bundle exec rails test:all"
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
@@ -199,11 +120,56 @@ jobs:
           name: coverage
           path: tmp/artifacts
 
-  build-and-push:
-    name: Build, test and push image
+  prepare-ecr:
+    name: Prepare ECR repository
     runs-on: ubuntu-latest
-    needs: test
+    needs: static-checks
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
+      - name: Configure AWS credentials through OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.5.7
+
+      - name: Terraform init
+        run: |
+          terraform -chdir=terraform init \
+            -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
+            -backend-config="key=openstreetmap/${{ env.DEPLOY_ENV }}.tfstate" \
+            -backend-config="region=${{ env.AWS_REGION }}" \
+            -backend-config="dynamodb_table=${{ secrets.TF_STATE_LOCK_TABLE }}" \
+            -backend-config="encrypt=true"
+
+      - name: Create or update ECR repository
+        env:
+          TF_VAR_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+          TF_VAR_aws_region: ${{ env.AWS_REGION }}
+          TF_VAR_region: ${{ env.AWS_REGION }}
+          TF_VAR_ecr_repo_name: ${{ env.ECR_REPOSITORY }}
+          TF_VAR_image_tag: ${{ github.sha }}
+          TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
+          TF_VAR_db_username: ${{ secrets.DB_USERNAME }}
+          TF_VAR_db_name: ${{ secrets.DB_NAME }}
+          TF_VAR_key_name: ${{ secrets.KEY_NAME }}
+        run: terraform -chdir=terraform apply -input=false -auto-approve -target=aws_ecr_repository.app
+
+  build-and-push:
+    name: Build and push image
+    runs-on: ubuntu-latest
+    needs:
+      - test
+      - prepare-ecr
+    outputs:
+      image: ${{ steps.image.outputs.image }}
+      image_tag: ${{ github.sha }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -214,50 +180,84 @@ jobs:
           repository: ${{ env.OSM_REPO }}
           path: ${{ env.OSM_PATH }}
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+      - name: Configure AWS credentials through OIDC
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: ${{ env.AWS_REGION }}
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
 
       - name: Login to ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set image reference
+        id: image
+        run: echo "image=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}" >> "${GITHUB_OUTPUT}"
 
       - name: Set up buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
-      - name: Build and push Docker image (with cache)
-        uses: docker/build-push-action@v4
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
         with:
           context: openstreetmap-website
           file: openstreetmap-website/Dockerfile
           push: true
-          tags: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/openstreetmap-website:${{ github.sha }}
+          tags: ${{ steps.image.outputs.image }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-        env:
-          IMAGE_URI: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/openstreetmap-website
-          TAG: ${{ github.sha }}
-        
-      - name: Export IMAGE_URI/TAG
+
+  deploy:
+    name: Deploy infrastructure and image
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || (github.ref_name == 'at' && 'at' || 'dev') }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials through OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.5.7
+
+      - name: Terraform init
         run: |
-          echo "IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/openstreetmap-website" >> $GITHUB_ENV
-          echo "IMAGE_TAG=${{ github.sha }}" >> $GITHUB_ENV
+          terraform -chdir=terraform init \
+            -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
+            -backend-config="key=openstreetmap/${{ env.DEPLOY_ENV }}.tfstate" \
+            -backend-config="region=${{ env.AWS_REGION }}" \
+            -backend-config="dynamodb_table=${{ secrets.TF_STATE_LOCK_TABLE }}" \
+            -backend-config="encrypt=true"
 
-      # image already pushed by docker/build-push-action
+      - name: Terraform plan
+        env:
+          TF_VAR_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+          TF_VAR_aws_region: ${{ env.AWS_REGION }}
+          TF_VAR_region: ${{ env.AWS_REGION }}
+          TF_VAR_ecr_repo_name: ${{ env.ECR_REPOSITORY }}
+          TF_VAR_image_tag: ${{ needs.build-and-push.outputs.image_tag }}
+          TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
+          TF_VAR_db_username: ${{ secrets.DB_USERNAME }}
+          TF_VAR_db_name: ${{ secrets.DB_NAME }}
+          TF_VAR_key_name: ${{ secrets.KEY_NAME }}
+        run: terraform -chdir=terraform plan -input=false -out=tf.plan
 
-      - name: Register ECS task definition
-        id: register-task
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition: ecs/task-definition.json
-          container-name: web
-          image: ${{ env.IMAGE_URI }}:${{ env.IMAGE_TAG }}
-
-      - name: Deploy to ECS service
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-        with:
-          task-definition: ${{ steps.register-task.outputs.task-definition }}
-          service: openstreetmap-service
-          cluster: openstreetmap-ecs-cluster
+      - name: Terraform apply
+        env:
+          TF_VAR_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+          TF_VAR_aws_region: ${{ env.AWS_REGION }}
+          TF_VAR_region: ${{ env.AWS_REGION }}
+          TF_VAR_ecr_repo_name: ${{ env.ECR_REPOSITORY }}
+          TF_VAR_image_tag: ${{ needs.build-and-push.outputs.image_tag }}
+          TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
+          TF_VAR_db_username: ${{ secrets.DB_USERNAME }}
+          TF_VAR_db_name: ${{ secrets.DB_NAME }}
+          TF_VAR_key_name: ${{ secrets.KEY_NAME }}
+        run: terraform -chdir=terraform apply -input=false -auto-approve tf.plan

@@ -14,7 +14,7 @@ The latest architecture diagram is embedded below and available as a static SVG 
 
 The editable Eraser diagram-as-code source is available at [`docs/architecture.eraser`](docs/architecture.eraser).
 
-This project provides a modern, secure, and scalable deployment of the OpenStreetMap website to AWS using Terraform, ECS (Fargate), and GitHub Actions. It supports local development with Docker Compose and is organized for multi-environment (dev, at, pr) workflows.
+This project provides a modern, secure, and scalable deployment of the OpenStreetMap website to AWS using Terraform, ECS (Fargate), ECR, and GitHub Actions OIDC. It supports local application development with Docker Compose and is organized for multi-environment AWS workflows (`dev`, `at`, and `pr`).
 
 ---
 
@@ -22,7 +22,7 @@ This project provides a modern, secure, and scalable deployment of the OpenStree
 
 - **Modular Terraform**: All infrastructure code is in `terraform/`, with modules for network, secrets, and more.
 - **Environment Segmentation**: Use `terraform/envs/dev.tfvars`, `at.tfvars`, and `pr.tfvars` for dev, acceptance, and production.
-- **CI/CD**: Automated pipeline with linting, security checks, tests, and deployment (manual approval for production).
+- **CI/CD**: A single AWS deployment pipeline with linting, security checks, tests, ECR image publishing, and Terraform deployment.
 - **Secrets Management**: DB credentials managed via AWS Secrets Manager.
 - **Security Best Practices**: Least-privilege security groups, no hardcoded secrets, and environment-based access control.
 
@@ -43,14 +43,22 @@ docker compose run --rm web bundle exec rails db:migrate
 ### Terraform (Infrastructure)
 ```sh
 cd terraform
-terraform init
+terraform init \
+  -backend-config="bucket=<terraform-state-bucket>" \
+  -backend-config="key=openstreetmap/dev.tfstate" \
+  -backend-config="region=eu-central-1" \
+  -backend-config="dynamodb_table=<terraform-lock-table>" \
+  -backend-config="encrypt=true"
 terraform workspace select dev # or at, pr
 terraform apply -var-file="envs/dev.tfvars"
 ```
 
 ### CI/CD Pipeline
-- On push to `main` (dev) or `at` branches, the pipeline runs linting, security checks, tests, and deploys automatically.
-- For production (`pr`), deployment requires manual approval via GitHub Actions.
+- The repository uses one workflow: `.github/workflows/ci-ecr-deploy.yml`.
+- The workflow authenticates to AWS with GitHub Actions OIDC using `AWS_ROLE_TO_ASSUME`; no long-lived AWS access keys are required.
+- On push to `main`, the pipeline deploys the `dev` environment. On push to `at`, it deploys the `at` environment.
+- Manual runs can deploy `dev`, `at`, or `pr` using the workflow dispatch environment input.
+- The deployment sequence is: static Terraform checks, Rails tests, ECR repository preparation, Docker image build/push, then Terraform plan/apply with the Git SHA image tag.
 
 ---
 
@@ -77,7 +85,15 @@ terraform apply -var-file="envs/dev.tfvars"
 
 - `AWS_REGION` — e.g. `eu-central-1`
 - `AWS_ACCOUNT_ID` — your AWS account id
-- `AWS_ROLE_TO_ASSUME` (optional) — for role-based auth
+- `AWS_ROLE_TO_ASSUME` — IAM role trusted by the GitHub Actions OIDC provider
+- `TF_STATE_BUCKET` — S3 bucket for Terraform remote state
+- `TF_STATE_LOCK_TABLE` — DynamoDB table for Terraform state locking
+- `DB_PASSWORD` — production database password used by Terraform
+- `DB_USERNAME` — production database username used by Terraform
+- `DB_NAME` — production database name used by Terraform
+- `KEY_NAME` — EC2 key pair name expected by the Terraform variables
+
+The AWS role must trust GitHub's OIDC provider and allow this repository to assume it. Scope the trust policy to the target repository and branch or GitHub Environment where possible.
 
 ---
 

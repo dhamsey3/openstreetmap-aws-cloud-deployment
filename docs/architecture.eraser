@@ -40,7 +40,6 @@ AWS Account [icon: aws-account, color: orange] {
 Delivery Workflow [color: grey] {
   GitHub Actions [icon: code, color: black, label: "GitHub Actions"]
   Terraform [icon: terraform, color: purple, label: "Terraform"]
-  LocalStack [icon: docker, color: blue, label: "LocalStack validation"]
 }
 
 // Runtime path
@@ -61,16 +60,15 @@ VPC > VPC Flow Logs: network telemetry
 VPC Flow Logs > CloudWatch: flow logs
 
 // Delivery workflow
-GitHub Actions > Terraform: validate infrastructure
-Terraform > AWS Account: provision resources
+GitHub Actions > Terraform: OIDC plan and apply
+Terraform > AWS Account: provision and deploy resources
 GitHub Actions > ECR Repository: build and push image
 ECR Repository > ECS Fargate: pull immutable image
-GitHub Actions > ECS Fargate: deploy task definition
-LocalStack --> Terraform: local validation
+Terraform > ECS Fargate: register task definition
 
 legend [position: bottom-right] {
   [connection: >, label: "Runtime or platform dependency"]
-  [connection: -->, label: "Optional or validation workflow"]
+  [connection: -->, label: "Optional platform workflow"]
   [icon: aws-elb-application-load-balancer, label: "AWS service"]
   [icon: code, label: "Delivery workflow"]
 }
