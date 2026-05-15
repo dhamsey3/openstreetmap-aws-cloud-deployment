@@ -6,6 +6,10 @@
 
 ## Architecture Diagram
 
+An Eraser diagram-as-code version with standard AWS icons is available at [`docs/architecture.eraser`](docs/architecture.eraser). A static SVG export is also available at [`docs/architecture.svg`](docs/architecture.svg).
+
+![OpenStreetMap AWS Cloud Architecture](docs/architecture.svg)
+
 <details>
 <summary>Show Mermaid code</summary>
 

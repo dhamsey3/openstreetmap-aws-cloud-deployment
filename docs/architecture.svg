@@ -1,0 +1,197 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="960" viewBox="0 0 1400 960" role="img" aria-labelledby="title desc">
+  <title id="title">OpenStreetMap AWS Cloud Architecture</title>
+  <desc id="desc">Architecture diagram showing users, GitHub Actions, Terraform, Amazon ECR, an AWS VPC with public and private subnets, ALB, ECS Fargate, RDS PostgreSQL, Secrets Manager, CloudWatch, S3 ALB logs, NAT Gateway, Internet Gateway, and Application Auto Scaling.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#344054"/>
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#b54708"/>
+    </marker>
+    <style>
+      .bg { fill: #f8fafc; }
+      .title { font: 700 30px Arial, sans-serif; fill: #101828; }
+      .subtitle { font: 400 14px Arial, sans-serif; fill: #475467; }
+      .group { fill: #ffffff; stroke: #98a2b3; stroke-width: 2; rx: 18; }
+      .region { fill: #fff7ed; stroke: #fb923c; stroke-width: 2; rx: 16; }
+      .vpc { fill: #f0fdf4; stroke: #22c55e; stroke-width: 2; rx: 16; }
+      .subnet-public { fill: #eff6ff; stroke: #60a5fa; stroke-width: 2; rx: 14; }
+      .subnet-private { fill: #f5f3ff; stroke: #a78bfa; stroke-width: 2; rx: 14; }
+      .node { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1.5; rx: 12; filter: drop-shadow(0 2px 4px rgba(16,24,40,.10)); }
+      .aws-orange { fill: #ff9900; }
+      .aws-blue { fill: #527fff; }
+      .aws-green { fill: #7aa116; }
+      .aws-purple { fill: #8c4fff; }
+      .aws-red { fill: #dd344c; }
+      .node-title { font: 700 14px Arial, sans-serif; fill: #101828; }
+      .node-sub { font: 400 12px Arial, sans-serif; fill: #667085; }
+      .label { font: 700 15px Arial, sans-serif; fill: #344054; }
+      .small-label { font: 400 12px Arial, sans-serif; fill: #667085; }
+      .line { fill: none; stroke: #344054; stroke-width: 2; marker-end: url(#arrow); }
+      .line-soft { fill: none; stroke: #667085; stroke-width: 1.8; marker-end: url(#arrow); stroke-dasharray: 6 5; }
+      .line-deploy { fill: none; stroke: #b54708; stroke-width: 2; marker-end: url(#arrow-orange); }
+      .icon-text { font: 700 13px Arial, sans-serif; fill: #ffffff; text-anchor: middle; dominant-baseline: middle; }
+    </style>
+  </defs>
+
+  <rect class="bg" width="1400" height="960"/>
+  <text x="48" y="54" class="title">OpenStreetMap AWS Cloud Architecture</text>
+  <text x="48" y="80" class="subtitle">Terraform-managed AWS deployment with ECS Fargate, RDS PostgreSQL, observability, and GitHub Actions delivery.</text>
+
+  <rect x="34" y="112" width="1332" height="802" class="group"/>
+  <text x="58" y="146" class="label">AWS Account</text>
+
+  <rect x="62" y="168" width="1276" height="710" class="region"/>
+  <text x="88" y="202" class="label">Region: eu-central-1</text>
+
+  <rect x="96" y="238" width="900" height="566" class="vpc"/>
+  <text x="122" y="272" class="label">VPC 10.0.0.0/16</text>
+  <text x="122" y="294" class="small-label">Two public and two private subnets across eu-central-1a / eu-central-1b</text>
+
+  <rect x="130" y="326" width="810" height="164" class="subnet-public"/>
+  <text x="154" y="360" class="label">Public Subnets</text>
+
+  <rect x="130" y="542" width="810" height="218" class="subnet-private"/>
+  <text x="154" y="576" class="label">Private Subnets</text>
+
+  <!-- External actors -->
+  <rect x="74" y="36" width="152" height="58" class="node"/>
+  <circle cx="104" cy="65" r="15" class="aws-blue"/>
+  <text x="104" y="65" class="icon-text">U</text>
+  <text x="128" y="62" class="node-title">Users</text>
+  <text x="128" y="80" class="node-sub">HTTP / HTTPS</text>
+
+  <rect x="1042" y="44" width="176" height="58" class="node"/>
+  <circle cx="1072" cy="73" r="15" fill="#24292f"/>
+  <text x="1072" y="73" class="icon-text">GH</text>
+  <text x="1096" y="70" class="node-title">GitHub Actions</text>
+  <text x="1096" y="88" class="node-sub">CI/CD pipeline</text>
+
+  <rect x="1236" y="44" width="120" height="58" class="node"/>
+  <circle cx="1266" cy="73" r="15" fill="#7b42bc"/>
+  <text x="1266" y="73" class="icon-text">TF</text>
+  <text x="1290" y="70" class="node-title">Terraform</text>
+  <text x="1290" y="88" class="node-sub">IaC</text>
+
+  <!-- VPC networking -->
+  <rect x="174" y="392" width="150" height="62" class="node"/>
+  <circle cx="204" cy="423" r="15" class="aws-green"/>
+  <text x="204" y="423" class="icon-text">IGW</text>
+  <text x="228" y="419" class="node-title">Internet</text>
+  <text x="228" y="437" class="node-sub">Gateway</text>
+
+  <rect x="378" y="392" width="172" height="62" class="node"/>
+  <circle cx="408" cy="423" r="15" class="aws-green"/>
+  <text x="408" y="423" class="icon-text">ALB</text>
+  <text x="432" y="419" class="node-title">Application</text>
+  <text x="432" y="437" class="node-sub">Load Balancer</text>
+
+  <rect x="626" y="392" width="142" height="62" class="node"/>
+  <circle cx="656" cy="423" r="15" class="aws-green"/>
+  <text x="656" y="423" class="icon-text">NAT</text>
+  <text x="680" y="419" class="node-title">NAT</text>
+  <text x="680" y="437" class="node-sub">Gateway</text>
+
+  <rect x="207" y="628" width="178" height="72" class="node"/>
+  <circle cx="237" cy="664" r="15" class="aws-orange"/>
+  <text x="237" y="664" class="icon-text">ECS</text>
+  <text x="261" y="656" class="node-title">ECS Fargate</text>
+  <text x="261" y="674" class="node-sub">Rails web task :3000</text>
+
+  <rect x="492" y="628" width="184" height="72" class="node"/>
+  <circle cx="522" cy="664" r="15" class="aws-purple"/>
+  <text x="522" y="664" class="icon-text">RDS</text>
+  <text x="546" y="656" class="node-title">RDS PostgreSQL</text>
+  <text x="546" y="674" class="node-sub">Private Multi-AZ DB</text>
+
+  <rect x="742" y="628" width="150" height="72" class="node"/>
+  <circle cx="772" cy="664" r="15" class="aws-green"/>
+  <text x="772" y="664" class="icon-text">VPC</text>
+  <text x="796" y="656" class="node-title">Flow Logs</text>
+  <text x="796" y="674" class="node-sub">All traffic</text>
+
+  <!-- Regional services -->
+  <rect x="1040" y="242" width="244" height="64" class="node"/>
+  <circle cx="1070" cy="274" r="15" class="aws-orange"/>
+  <text x="1070" y="274" class="icon-text">ECR</text>
+  <text x="1094" y="268" class="node-title">Amazon ECR</text>
+  <text x="1094" y="286" class="node-sub">Immutable application images</text>
+
+  <rect x="1040" y="334" width="244" height="64" class="node"/>
+  <circle cx="1070" cy="366" r="15" class="aws-red"/>
+  <text x="1070" y="366" class="icon-text">SEC</text>
+  <text x="1094" y="360" class="node-title">Secrets Manager</text>
+  <text x="1094" y="378" class="node-sub">Database credentials</text>
+
+  <rect x="1040" y="426" width="244" height="64" class="node"/>
+  <circle cx="1070" cy="458" r="15" class="aws-purple"/>
+  <text x="1070" y="458" class="icon-text">CW</text>
+  <text x="1094" y="452" class="node-title">CloudWatch</text>
+  <text x="1094" y="470" class="node-sub">Logs, metrics, alarms</text>
+
+  <rect x="1040" y="518" width="244" height="64" class="node"/>
+  <circle cx="1070" cy="550" r="15" class="aws-green"/>
+  <text x="1070" y="550" class="icon-text">S3</text>
+  <text x="1094" y="544" class="node-title">S3 ALB Logs</text>
+  <text x="1094" y="562" class="node-sub">Encrypted, lifecycle-managed</text>
+
+  <rect x="1040" y="610" width="244" height="64" class="node"/>
+  <circle cx="1070" cy="642" r="15" class="aws-orange"/>
+  <text x="1070" y="642" class="icon-text">AS</text>
+  <text x="1094" y="636" class="node-title">App Auto Scaling</text>
+  <text x="1094" y="654" class="node-sub">CPU, memory, request count</text>
+
+  <rect x="1040" y="702" width="244" height="64" class="node"/>
+  <circle cx="1070" cy="734" r="15" class="aws-red"/>
+  <text x="1070" y="734" class="icon-text">ACM</text>
+  <text x="1094" y="728" class="node-title">ACM Certificate</text>
+  <text x="1094" y="746" class="node-sub">Optional HTTPS listener</text>
+
+  <rect x="1038" y="806" width="246" height="46" class="node"/>
+  <circle cx="1067" cy="829" r="13" fill="#2496ed"/>
+  <text x="1067" y="829" class="icon-text">D</text>
+  <text x="1092" y="826" class="node-title">LocalStack + Docker Compose</text>
+  <text x="1092" y="843" class="node-sub">Local validation</text>
+
+  <!-- Runtime lines -->
+  <path d="M 150 94 L 150 422 L 378 422" class="line"/>
+  <path d="M 550 423 C 592 480 282 520 296 628" class="line"/>
+  <path d="M 385 664 L 492 664" class="line"/>
+  <path d="M 385 648 C 610 558 900 366 1040 366" class="line"/>
+  <path d="M 385 678 C 642 724 830 458 1040 458" class="line"/>
+  <path d="M 550 438 C 742 484 888 550 1040 550" class="line"/>
+  <path d="M 676 628 C 782 550 898 466 1040 458" class="line"/>
+  <path d="M 892 664 C 946 626 1004 498 1040 458" class="line"/>
+  <path d="M 697 454 C 680 506 680 552 656 628" class="line-soft"/>
+  <path d="M 324 423 L 378 423" class="line"/>
+  <path d="M 1040 734 C 900 730 660 490 550 423" class="line-soft"/>
+
+  <!-- Delivery lines -->
+  <path d="M 1130 102 L 1130 242" class="line-deploy"/>
+  <path d="M 1218 73 L 1236 73" class="line-deploy"/>
+  <path d="M 1296 102 C 1290 150 1270 184 1218 242" class="line-deploy"/>
+  <path d="M 1040 274 C 820 240 470 512 296 628" class="line-deploy"/>
+  <path d="M 1042 82 C 850 132 520 276 464 392" class="line-deploy"/>
+  <path d="M 1040 642 C 874 652 600 652 385 652" class="line-deploy"/>
+  <path d="M 1040 829 C 834 834 500 840 296 700" class="line-soft"/>
+
+  <!-- Labels -->
+  <text x="250" y="408" class="small-label">internet route</text>
+  <text x="586" y="513" class="small-label">target group :3000</text>
+  <text x="411" y="651" class="small-label">PostgreSQL 5432</text>
+  <text x="858" y="346" class="small-label">DB secret</text>
+  <text x="824" y="526" class="small-label">logs / metrics</text>
+  <text x="736" y="250" class="small-label">build + push image</text>
+  <text x="782" y="610" class="small-label">scale desired count</text>
+
+  <!-- Legend -->
+  <rect x="58" y="826" width="464" height="64" class="node"/>
+  <line x1="82" y1="846" x2="136" y2="846" class="line"/>
+  <text x="150" y="850" class="small-label">Runtime traffic / service dependency</text>
+  <line x1="82" y1="870" x2="136" y2="870" class="line-deploy"/>
+  <text x="150" y="874" class="small-label">CI/CD or infrastructure delivery</text>
+  <line x1="332" y1="846" x2="386" y2="846" class="line-soft"/>
+  <text x="400" y="850" class="small-label">Optional / local workflow</text>
+
+  <text x="58" y="934" class="subtitle">Static SVG companion to docs/architecture.eraser. Service labels correspond to Terraform resources in this repository.</text>
+</svg>
