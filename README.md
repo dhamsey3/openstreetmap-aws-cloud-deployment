@@ -6,7 +6,7 @@
 
 ## Architecture Diagram
 
-An Eraser diagram-as-code version with standard AWS icons is available at [`docs/architecture.eraser`](docs/architecture.eraser). A static SVG export is also available at [`docs/architecture.svg`](docs/architecture.svg).
+An Eraser diagram-as-code version is available at [`docs/architecture.eraser`](docs/architecture.eraser). A static SVG using the official AWS Architecture Icon package is available at [`docs/architecture.svg`](docs/architecture.svg).
 
 <p align="center">
   <img src="docs/architecture.svg" alt="OpenStreetMap AWS Cloud Architecture" width="100%">
