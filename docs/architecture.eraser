@@ -6,76 +6,71 @@ typeface clean
 // Paste this file into an Eraser architecture diagram to render it.
 // Icons use Eraser's standard AWS icon names.
 
-External Systems [color: grey] {
-  Users [icon: user, color: blue, label: "Users / Developers"]
-  GitHub Actions [icon: code, color: black, label: "GitHub Actions CI/CD"]
-  Terraform [icon: terraform, color: purple, label: "Terraform IaC"]
-  Local Development [icon: docker, color: blue, label: "LocalStack + Docker Compose"]
-}
+Users [icon: user, color: blue, label: "Users"]
 
 AWS Account [icon: aws-account, color: orange] {
   AWS Region [icon: aws-region, color: orange, label: "Region: eu-central-1"] {
     VPC [icon: aws-vpc, color: green, label: "VPC 10.0.0.0/16"] {
-      Public Subnets [icon: aws-public-subnet, color: blue, label: "Public subnets / 2 AZs"] {
-        Internet Gateway [icon: aws-internet-gateway, color: green]
+      Public Subnets [icon: aws-public-subnet, color: blue, label: "Public subnets"] {
         Application Load Balancer [icon: aws-elb-application-load-balancer, color: blue, label: "Application Load Balancer"]
-        NAT Gateway [icon: aws-nat-gateway, color: green]
+        NAT Gateway [icon: aws-nat-gateway, color: green, label: "NAT Gateway"]
       }
 
-      Private App Subnets [icon: aws-private-subnet, color: orange, label: "Private app subnets / 2 AZs"] {
-        ECS Cluster [icon: aws-elastic-container-service, color: orange, label: "ECS cluster"]
-        Web Task [icon: aws-fargate, color: orange, label: "Fargate Rails web task :3000"]
-        VPC Flow Logs [icon: aws-vpc-flow-logs, color: green]
+      Private App Subnets [icon: aws-private-subnet, color: orange, label: "Private app subnets"] {
+        ECS Fargate [icon: aws-fargate, color: orange, label: "ECS Fargate Rails task"]
+        VPC Flow Logs [icon: aws-vpc-flow-logs, color: green, label: "VPC Flow Logs"]
       }
 
-      Private Data Subnets [icon: aws-private-subnet, color: purple, label: "Private data subnets / 2 AZs"] {
+      Private Data Subnets [icon: aws-private-subnet, color: purple, label: "Private data subnets"] {
         RDS Postgres [icon: aws-rds, color: purple, label: "RDS PostgreSQL Multi-AZ"]
       }
     }
 
-    Regional Services [color: grey] {
-      ECR Repository [icon: aws-elastic-container-registry, color: orange, label: "Amazon ECR immutable images"]
-      Secrets Manager [icon: aws-secrets-manager, color: red, label: "Secrets Manager DB credentials"]
-      CloudWatch [icon: aws-cloudwatch, color: purple, label: "CloudWatch logs, metrics, alarms"]
-      ALB Logs Bucket [icon: aws-simple-storage-service, color: green, label: "S3 ALB access logs"]
+    Managed Services [color: grey] {
+      ECR Repository [icon: aws-elastic-container-registry, color: orange, label: "Amazon ECR"]
+      Secrets Manager [icon: aws-secrets-manager, color: red, label: "Secrets Manager"]
+      CloudWatch [icon: aws-cloudwatch, color: purple, label: "CloudWatch"]
+      ALB Logs Bucket [icon: aws-simple-storage-service, color: green, label: "S3 ALB logs"]
       Application Auto Scaling [icon: aws-application-auto-scaling, color: orange, label: "Application Auto Scaling"]
-      ACM Certificate [icon: aws-certificate-manager, color: red, label: "Optional ACM TLS certificate"]
+      ACM Certificate [icon: aws-certificate-manager, color: red, label: "Optional ACM certificate"]
     }
   }
 }
 
-// Runtime request path
-Users > Internet Gateway: HTTP / HTTPS
-Internet Gateway > Application Load Balancer: internet ingress
-Application Load Balancer > Web Task: target group :3000
-ECS Cluster > Web Task: run Fargate task
-Web Task > RDS Postgres: PostgreSQL 5432
+Delivery Workflow [color: grey] {
+  GitHub Actions [icon: code, color: black, label: "GitHub Actions"]
+  Terraform [icon: terraform, color: purple, label: "Terraform"]
+  LocalStack [icon: docker, color: blue, label: "LocalStack validation"]
+}
 
-// Private egress and telemetry
-Private App Subnets > NAT Gateway: outbound updates
-NAT Gateway > Internet Gateway: egress
+// Runtime path
+Users > Application Load Balancer: HTTPS
+Application Load Balancer > ECS Fargate: target group :3000
+ECS Fargate > RDS Postgres: PostgreSQL 5432
+
+// Private operations
+ECS Fargate --> NAT Gateway: private egress
+ECS Fargate > Secrets Manager: read DB credentials
+ECS Fargate > CloudWatch: container logs
+RDS Postgres > CloudWatch: database logs and monitoring
+Application Load Balancer > ALB Logs Bucket: access logs
+Application Load Balancer > CloudWatch: ALB metrics
+Application Auto Scaling > ECS Fargate: adjust desired count
+ACM Certificate --> Application Load Balancer: optional HTTPS listener
 VPC > VPC Flow Logs: network telemetry
 VPC Flow Logs > CloudWatch: flow logs
 
-// Service dependencies
-Web Task > Secrets Manager: read DB credentials
-Web Task > CloudWatch: container logs
-RDS Postgres > CloudWatch: PostgreSQL logs and enhanced monitoring
-Application Load Balancer > ALB Logs Bucket: access logs
-Application Load Balancer > CloudWatch: ALB metrics and alarms
-Application Auto Scaling > Web Task: adjust desired count
-ACM Certificate --> Application Load Balancer: optional HTTPS listener
-
-// Delivery path
+// Delivery workflow
+GitHub Actions > Terraform: validate infrastructure
+Terraform > AWS Account: provision resources
 GitHub Actions > ECR Repository: build and push image
-ECR Repository > Web Task: pull image
-GitHub Actions > Web Task: register task definition and deploy
-Terraform > AWS Account: provision infrastructure
-Local Development --> Terraform: local validation
+ECR Repository > ECS Fargate: pull immutable image
+GitHub Actions > ECS Fargate: deploy task definition
+LocalStack --> Terraform: local validation
 
 legend [position: bottom-right] {
-  [connection: >, label: "Runtime traffic / dependency"]
-  [connection: -->, label: "Optional or local workflow"]
-  [icon: aws-elb-application-load-balancer, label: "AWS service icon"]
-  [icon: code, label: "External delivery system"]
+  [connection: >, label: "Runtime or platform dependency"]
+  [connection: -->, label: "Optional or validation workflow"]
+  [icon: aws-elb-application-load-balancer, label: "AWS service"]
+  [icon: code, label: "Delivery workflow"]
 }
