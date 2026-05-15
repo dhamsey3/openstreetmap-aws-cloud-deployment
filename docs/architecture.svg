@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1176" viewBox="0 0 1500 980" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="1536" viewBox="24 24 1452 928" role="img" aria-labelledby="title desc">
   <title id="title">OpenStreetMap AWS Cloud Architecture</title>
   <desc id="desc">Professional AWS architecture diagram for OpenStreetMap cloud deployment. It shows users and GitHub Actions entering an AWS account, with a region, VPC, public subnets, private ECS Fargate application subnets, private RDS database subnets, and supporting AWS services including ECR, Secrets Manager, CloudWatch, S3, Auto Scaling, ACM, Internet Gateway, NAT Gateway, and VPC Flow Logs.</desc>
   <defs>
