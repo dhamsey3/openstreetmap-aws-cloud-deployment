@@ -6,10 +6,10 @@
 
 ## Architecture Diagram
 
-The latest architecture diagram is embedded below and available as a static SVG at [`docs/architecture.svg`](docs/architecture.svg). It uses official AWS Architecture Icon package assets stored in [`docs/assets/aws-icons`](docs/assets/aws-icons).
+The latest architecture diagram is embedded below and available as a static SVG at [`docs/architecture-official-aws.svg`](docs/architecture-official-aws.svg). It uses official AWS Architecture Icon package assets stored in [`docs/assets/aws-icons`](docs/assets/aws-icons).
 
 <p align="center">
-  <img src="docs/architecture.svg" alt="OpenStreetMap AWS Cloud Architecture" width="100%">
+  <img src="docs/architecture-official-aws.svg" alt="OpenStreetMap AWS Cloud Architecture" width="100%">
 </p>
 
 The editable Eraser diagram-as-code source is available at [`docs/architecture.eraser`](docs/architecture.eraser).
