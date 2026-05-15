@@ -1,4 +1,4 @@
-direction down
+direction right
 colorMode pastel
 styleMode shadow
 typeface clean
@@ -6,73 +6,71 @@ typeface clean
 // Paste this file into an Eraser architecture diagram to render it.
 // Icons use Eraser's standard AWS icon names.
 
-Users [icon: user, color: blue, label: "Users / Developers"]
-GitHub Actions [icon: code, color: black]
-Terraform [icon: terraform, color: purple]
-OpenStreetMap Source [icon: code, color: grey, label: "openstreetmap/openstreetmap-website"]
+External Systems [color: grey] {
+  Users [icon: user, color: blue, label: "Users / Developers"]
+  GitHub Actions [icon: code, color: black, label: "GitHub Actions CI/CD"]
+  Terraform [icon: terraform, color: purple, label: "Terraform IaC"]
+  Local Development [icon: docker, color: blue, label: "LocalStack + Docker Compose"]
+}
 
 AWS Account [icon: aws-account, color: orange] {
   AWS Region [icon: aws-region, color: orange, label: "Region: eu-central-1"] {
     VPC [icon: aws-vpc, color: green, label: "VPC 10.0.0.0/16"] {
-      Internet Gateway [icon: aws-internet-gateway, color: green]
-      NAT Gateway [icon: aws-nat-gateway, color: green]
-      VPC Flow Logs [icon: aws-vpc-flow-logs, color: green]
-
-      Public Subnets [icon: aws-public-subnet, color: green, label: "Public subnets / 2 AZs"] {
-        Application Load Balancer [icon: aws-elb-application-load-balancer, color: blue, label: "ALB :80 / optional :443"]
+      Public Subnets [icon: aws-public-subnet, color: blue, label: "Public subnets / 2 AZs"] {
+        Internet Gateway [icon: aws-internet-gateway, color: green]
+        Application Load Balancer [icon: aws-elb-application-load-balancer, color: blue, label: "Application Load Balancer"]
+        NAT Gateway [icon: aws-nat-gateway, color: green]
       }
 
-      Private Subnets [icon: aws-private-subnet, color: green, label: "Private subnets / 2 AZs"] {
-        ECS Cluster [icon: aws-elastic-container-service, color: orange, label: "ECS cluster"] {
-          ECS Service [icon: aws-fargate, color: orange, label: "Fargate service"]
-          Web Task [icon: aws-fargate, color: orange, label: "Rails web task :3000"]
-        }
+      Private App Subnets [icon: aws-private-subnet, color: orange, label: "Private app subnets / 2 AZs"] {
+        ECS Cluster [icon: aws-elastic-container-service, color: orange, label: "ECS cluster"]
+        Web Task [icon: aws-fargate, color: orange, label: "Fargate Rails web task :3000"]
+        VPC Flow Logs [icon: aws-vpc-flow-logs, color: green]
+      }
 
+      Private Data Subnets [icon: aws-private-subnet, color: purple, label: "Private data subnets / 2 AZs"] {
         RDS Postgres [icon: aws-rds, color: purple, label: "RDS PostgreSQL Multi-AZ"]
       }
     }
 
-    ECR Repository [icon: aws-elastic-container-registry, color: orange, label: "Immutable app images"]
-    Secrets Manager [icon: aws-secrets-manager, color: red, label: "DB credentials"]
-    CloudWatch [icon: aws-cloudwatch, color: purple, label: "Logs, metrics, alarms"]
-    Application Auto Scaling [icon: aws-application-auto-scaling, color: orange, label: "ECS target tracking"]
-    ACM Certificate [icon: aws-certificate-manager, color: red, label: "Optional ACM certificate"]
-    ALB Logs Bucket [icon: aws-simple-storage-service, color: green, label: "S3 ALB access logs"]
+    Regional Services [color: grey] {
+      ECR Repository [icon: aws-elastic-container-registry, color: orange, label: "Amazon ECR immutable images"]
+      Secrets Manager [icon: aws-secrets-manager, color: red, label: "Secrets Manager DB credentials"]
+      CloudWatch [icon: aws-cloudwatch, color: purple, label: "CloudWatch logs, metrics, alarms"]
+      ALB Logs Bucket [icon: aws-simple-storage-service, color: green, label: "S3 ALB access logs"]
+      Application Auto Scaling [icon: aws-application-auto-scaling, color: orange, label: "Application Auto Scaling"]
+      ACM Certificate [icon: aws-certificate-manager, color: red, label: "Optional ACM TLS certificate"]
+    }
   }
 }
 
-Local Development [icon: docker, color: blue, label: "LocalStack + Docker Compose"]
-
-// Request path
-Users > Application Load Balancer: HTTP / HTTPS
-Application Load Balancer > ECS Service: target group :3000
-ECS Service > Web Task: run task
+// Runtime request path
+Users > Internet Gateway: HTTP / HTTPS
+Internet Gateway > Application Load Balancer: internet ingress
+Application Load Balancer > Web Task: target group :3000
+ECS Cluster > Web Task: run Fargate task
 Web Task > RDS Postgres: PostgreSQL 5432
-Web Task > Secrets Manager: read DB secret
-Web Task > CloudWatch: container logs
 
-// Networking
-Internet Gateway > Public Subnets: internet route
-Private Subnets > NAT Gateway: outbound updates
+// Private egress and telemetry
+Private App Subnets > NAT Gateway: outbound updates
 NAT Gateway > Internet Gateway: egress
 VPC > VPC Flow Logs: network telemetry
 VPC Flow Logs > CloudWatch: flow logs
 
+// Service dependencies
+Web Task > Secrets Manager: read DB credentials
+Web Task > CloudWatch: container logs
+RDS Postgres > CloudWatch: PostgreSQL logs and enhanced monitoring
+Application Load Balancer > ALB Logs Bucket: access logs
+Application Load Balancer > CloudWatch: ALB metrics and alarms
+Application Auto Scaling > Web Task: adjust desired count
+ACM Certificate --> Application Load Balancer: optional HTTPS listener
+
 // Delivery path
-GitHub Actions > OpenStreetMap Source: checkout app source
-GitHub Actions > Terraform: fmt / validate / plan
-Terraform > AWS Account: provision infrastructure
 GitHub Actions > ECR Repository: build and push image
 ECR Repository > Web Task: pull image
-GitHub Actions > ECS Service: register task definition + deploy
-
-// Operations and security
-Application Load Balancer > ALB Logs Bucket: access logs
-Application Load Balancer > CloudWatch: ALB metrics / unhealthy-target alarm
-ECS Service > Application Auto Scaling: CPU / memory / request scaling
-Application Auto Scaling > ECS Service: adjust desired count
-RDS Postgres > CloudWatch: PostgreSQL logs + enhanced monitoring
-ACM Certificate --> Application Load Balancer: optional TLS listener
+GitHub Actions > Web Task: register task definition and deploy
+Terraform > AWS Account: provision infrastructure
 Local Development --> Terraform: local validation
 
 legend [position: bottom-right] {

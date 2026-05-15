@@ -10,35 +10,6 @@ An Eraser diagram-as-code version with standard AWS icons is available at [`docs
 
 ![OpenStreetMap AWS Cloud Architecture](docs/architecture.svg)
 
-<details>
-<summary>Show Mermaid code</summary>
-
-```mermaid
-graph TD
-		User[User / Developer]
-		subgraph AWS
-			ALB[Application Load Balancer]
-			ECS[ECS Fargate Service]
-			RDS[(RDS Postgres)]
-			S3[(S3 Bucket)]
-			Secrets[Secrets Manager]
-			CloudWatch[CloudWatch]
-		end
-		Local[Local Dev (Docker Compose)]
-
-		User -->|HTTP/HTTPS| ALB
-		ALB --> ECS
-		ECS -->|DB Conn| RDS
-		ECS -->|Secrets| Secrets
-		ECS -->|Logs| CloudWatch
-		ECS -->|Assets| S3
-		Local -.->|Dev/Test| ECS
-		Local -.->|Dev/Test| RDS
-		Local -.->|Dev/Test| S3
-		Local -.->|Dev/Test| Secrets
-```
-</details>
-
 This project provides a modern, secure, and scalable deployment of the OpenStreetMap website to AWS using Terraform, ECS (Fargate), and GitHub Actions. It supports local development with Docker Compose and is organized for multi-environment (dev, at, pr) workflows.
 
 ---
