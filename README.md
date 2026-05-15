@@ -56,9 +56,10 @@ terraform apply -var-file="envs/dev.tfvars"
 ### CI/CD Pipeline
 - The repository uses one workflow: `.github/workflows/ci-ecr-deploy.yml`.
 - The workflow authenticates to AWS with GitHub Actions OIDC using `AWS_ROLE_TO_ASSUME`; no long-lived AWS access keys are required.
+- Each run resolves the latest `openstreetmap/openstreetmap-website` default branch (`master`; upstream does not currently use `main`) once, then tests, builds, tags, and deploys that exact OpenStreetMap commit.
 - On push to `main`, the pipeline deploys the `dev` environment. On push to `at`, it deploys the `at` environment.
 - Manual runs can deploy `dev`, `at`, or `pr` using the workflow dispatch environment input.
-- The deployment sequence is: static Terraform checks, Rails tests, ECR repository preparation, Docker image build/push, then Terraform plan/apply with the Git SHA image tag.
+- The deployment sequence is: static Terraform checks, resolve latest OpenStreetMap source, Rails tests, ECR repository preparation, Docker image build/push, then Terraform plan/apply with the immutable OpenStreetMap image tag.
 
 ---
 
