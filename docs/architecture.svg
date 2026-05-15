@@ -1,236 +1,259 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="1536" viewBox="24 24 1452 928" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="1500" viewBox="0 0 2400 1500" role="img" aria-labelledby="title desc">
   <title id="title">OpenStreetMap AWS Cloud Architecture</title>
-  <desc id="desc">Professional AWS architecture diagram for OpenStreetMap cloud deployment. It shows users and GitHub Actions entering an AWS account, with a region, VPC, public subnets, private ECS Fargate application subnets, private RDS database subnets, and supporting AWS services including ECR, Secrets Manager, CloudWatch, S3, Auto Scaling, ACM, Internet Gateway, NAT Gateway, and VPC Flow Logs.</desc>
+  <desc id="desc">Professional AWS architecture diagram for the OpenStreetMap cloud deployment. Users enter through an internet-facing Application Load Balancer in public subnets. ECS Fargate tasks run in private application subnets and connect to RDS PostgreSQL in private data subnets. GitHub Actions builds and deploys immutable images through ECR, Terraform provisions infrastructure, and regional services provide secrets, logs, monitoring, autoscaling, TLS certificates, and ALB access log storage.</desc>
   <defs>
-    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
-      <path d="M0 0 L10 5 L0 10 Z" fill="#344054"/>
+    <marker id="arrow-dark" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#334155"/>
     </marker>
-    <marker id="arrowDeploy" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
-      <path d="M0 0 L10 5 L0 10 Z" fill="#b54708"/>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#b45309"/>
     </marker>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#0f172a" flood-opacity="0.10"/>
+    </filter>
     <style>
       .page { fill: #f8fafc; }
-      .title { font: 700 34px Arial, sans-serif; fill: #101828; }
-      .subtitle { font: 400 16px Arial, sans-serif; fill: #475467; }
-      .boundary { fill: #ffffff; stroke: #98a2b3; stroke-width: 2; rx: 18; }
-      .region { fill: #fff7ed; stroke: #fb923c; stroke-width: 2; rx: 16; }
-      .vpc { fill: #f0fdf4; stroke: #22c55e; stroke-width: 2; rx: 16; }
-      .zone-public { fill: #eff6ff; stroke: #60a5fa; stroke-width: 2; rx: 14; }
-      .zone-app { fill: #fff7ed; stroke: #fdba74; stroke-width: 2; rx: 14; }
-      .zone-data { fill: #f5f3ff; stroke: #a78bfa; stroke-width: 2; rx: 14; }
-      .zone-support { fill: #f8fafc; stroke: #cbd5e1; stroke-width: 2; rx: 14; }
-      .node { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1.5; rx: 12; filter: drop-shadow(0 2px 4px rgba(16,24,40,.10)); }
-      .label { font: 700 17px Arial, sans-serif; fill: #344054; }
-      .small { font: 400 13px Arial, sans-serif; fill: #667085; }
-      .node-title { font: 700 15px Arial, sans-serif; fill: #101828; }
-      .node-sub { font: 400 13px Arial, sans-serif; fill: #667085; }
-      .icon { font: 700 13px Arial, sans-serif; fill: #ffffff; text-anchor: middle; dominant-baseline: middle; }
+      .header { fill: #0f172a; }
+      .title { font: 800 44px Arial, sans-serif; fill: #0f172a; }
+      .subtitle { font: 400 22px Arial, sans-serif; fill: #475569; }
+      .section-title { font: 800 24px Arial, sans-serif; fill: #1e293b; }
+      .section-subtitle { font: 400 17px Arial, sans-serif; fill: #64748b; }
+      .label { font: 800 19px Arial, sans-serif; fill: #334155; }
+      .small { font: 400 16px Arial, sans-serif; fill: #64748b; }
+      .tiny { font: 400 14px Arial, sans-serif; fill: #64748b; }
+      .card-title { font: 800 20px Arial, sans-serif; fill: #0f172a; }
+      .card-sub { font: 400 16px Arial, sans-serif; fill: #475569; }
+      .badge { font: 800 15px Arial, sans-serif; fill: #ffffff; text-anchor: middle; dominant-baseline: middle; }
+      .outer { fill: #ffffff; stroke: #94a3b8; stroke-width: 3; rx: 28; filter: url(#shadow); }
+      .region { fill: #fff7ed; stroke: #fb923c; stroke-width: 3; rx: 24; }
+      .vpc { fill: #ecfdf5; stroke: #22c55e; stroke-width: 3; rx: 24; }
+      .zone-public { fill: #eff6ff; stroke: #60a5fa; stroke-width: 2.5; rx: 20; }
+      .zone-app { fill: #fff7ed; stroke: #fdba74; stroke-width: 2.5; rx: 20; }
+      .zone-data { fill: #f5f3ff; stroke: #a78bfa; stroke-width: 2.5; rx: 20; }
+      .zone-services { fill: #f8fafc; stroke: #cbd5e1; stroke-width: 2.5; rx: 20; }
+      .node { fill: #ffffff; stroke: #cbd5e1; stroke-width: 2; rx: 18; filter: url(#shadow); }
+      .node-soft { fill: #ffffff; stroke: #e2e8f0; stroke-width: 2; rx: 18; }
       .orange { fill: #ff9900; }
       .blue { fill: #527fff; }
       .green { fill: #7aa116; }
       .purple { fill: #8c4fff; }
       .red { fill: #dd344c; }
       .dark { fill: #24292f; }
-      .line { fill: none; stroke: #344054; stroke-width: 2; marker-end: url(#arrow); }
-      .line-muted { fill: none; stroke: #667085; stroke-width: 1.8; stroke-dasharray: 6 5; marker-end: url(#arrow); }
-      .line-deploy { fill: none; stroke: #b54708; stroke-width: 2; marker-end: url(#arrowDeploy); }
-      .line-thin { fill: none; stroke: #98a2b3; stroke-width: 1.5; marker-end: url(#arrow); }
+      .docker { fill: #2496ed; }
+      .terraform { fill: #7b42bc; }
+      .flow { fill: none; stroke: #334155; stroke-width: 4; marker-end: url(#arrow-dark); }
+      .flow-soft { fill: none; stroke: #64748b; stroke-width: 3; stroke-dasharray: 10 8; marker-end: url(#arrow-dark); }
+      .flow-deploy { fill: none; stroke: #b45309; stroke-width: 4; marker-end: url(#arrow-orange); }
+      .flow-thin { fill: none; stroke: #94a3b8; stroke-width: 3; marker-end: url(#arrow-dark); }
+      .line-label { font: 700 15px Arial, sans-serif; fill: #334155; }
+      .deploy-label { font: 700 15px Arial, sans-serif; fill: #92400e; }
     </style>
   </defs>
 
-  <rect class="page" width="1500" height="980"/>
-  <text x="48" y="56" class="title">OpenStreetMap AWS Cloud Architecture</text>
-  <text x="48" y="82" class="subtitle">Terraform-managed deployment with ECS Fargate, private RDS PostgreSQL, CI/CD delivery, and operational services.</text>
+  <rect class="page" width="2400" height="1500"/>
+
+  <text x="80" y="82" class="title">OpenStreetMap AWS Cloud Architecture</text>
+  <text x="80" y="122" class="subtitle">Production-oriented deployment with private compute, private database, CI/CD delivery, and managed AWS operations.</text>
 
   <!-- External systems -->
-  <rect x="48" y="190" width="190" height="72" class="node"/>
-  <circle cx="84" cy="226" r="20" class="blue"/>
-  <text x="84" y="226" class="icon">USR</text>
-  <text x="112" y="221" class="node-title">Users</text>
-  <text x="112" y="241" class="node-sub">HTTP / HTTPS</text>
+  <rect x="72" y="210" width="290" height="104" class="node"/>
+  <circle cx="124" cy="262" r="30" class="blue"/>
+  <text x="124" y="262" class="badge">USR</text>
+  <text x="174" y="254" class="card-title">Users</text>
+  <text x="174" y="282" class="card-sub">Browser traffic</text>
 
-  <rect x="48" y="404" width="190" height="72" class="node"/>
-  <circle cx="84" cy="440" r="20" class="dark"/>
-  <text x="84" y="440" class="icon">GH</text>
-  <text x="112" y="435" class="node-title">GitHub Actions</text>
-  <text x="112" y="455" class="node-sub">Build, test, deploy</text>
+  <rect x="72" y="456" width="290" height="104" class="node"/>
+  <circle cx="124" cy="508" r="30" class="dark"/>
+  <text x="124" y="508" class="badge">GH</text>
+  <text x="174" y="500" class="card-title">GitHub Actions</text>
+  <text x="174" y="528" class="card-sub">Build, test, deploy</text>
 
-  <rect x="48" y="520" width="190" height="72" class="node"/>
-  <circle cx="84" cy="556" r="20" fill="#7b42bc"/>
-  <text x="84" y="556" class="icon">TF</text>
-  <text x="112" y="551" class="node-title">Terraform</text>
-  <text x="112" y="571" class="node-sub">Provision AWS infra</text>
+  <rect x="72" y="604" width="290" height="104" class="node"/>
+  <circle cx="124" cy="656" r="30" class="terraform"/>
+  <text x="124" y="656" class="badge">TF</text>
+  <text x="174" y="648" class="card-title">Terraform</text>
+  <text x="174" y="676" class="card-sub">Provision infra</text>
 
-  <rect x="48" y="778" width="190" height="72" class="node"/>
-  <circle cx="84" cy="814" r="20" fill="#2496ed"/>
-  <text x="84" y="814" class="icon">DEV</text>
-  <text x="112" y="809" class="node-title">LocalStack</text>
-  <text x="112" y="829" class="node-sub">Local validation</text>
+  <rect x="72" y="1138" width="290" height="104" class="node"/>
+  <circle cx="124" cy="1190" r="30" class="docker"/>
+  <text x="124" y="1190" class="badge">DEV</text>
+  <text x="174" y="1182" class="card-title">LocalStack</text>
+  <text x="174" y="1210" class="card-sub">Local AWS validation</text>
 
-  <!-- AWS account -->
-  <rect x="280" y="126" width="1170" height="786" class="boundary"/>
-  <text x="306" y="160" class="label">AWS Account</text>
+  <!-- AWS account and region -->
+  <rect x="420" y="172" width="1900" height="1194" class="outer"/>
+  <text x="462" y="222" class="section-title">AWS Account</text>
+  <text x="462" y="252" class="section-subtitle">OpenStreetMap cloud deployment</text>
 
-  <rect x="314" y="184" width="1102" height="694" class="region"/>
-  <text x="340" y="218" class="label">Region: eu-central-1</text>
+  <rect x="462" y="292" width="1816" height="1028" class="region"/>
+  <text x="504" y="342" class="section-title">Region: eu-central-1</text>
+  <text x="504" y="372" class="section-subtitle">Application, data, security, and operations services</text>
 
   <!-- VPC -->
-  <rect x="350" y="250" width="740" height="560" class="vpc"/>
-  <text x="376" y="284" class="label">VPC 10.0.0.0/16</text>
-  <text x="376" y="306" class="small">Two Availability Zones with public ingress and private application/database subnets</text>
+  <rect x="510" y="426" width="1186" height="806" class="vpc"/>
+  <text x="552" y="476" class="section-title">VPC 10.0.0.0/16</text>
+  <text x="552" y="506" class="section-subtitle">Public ingress tier, private application tier, and isolated database tier across two Availability Zones</text>
 
-  <rect x="386" y="342" width="178" height="340" class="zone-public"/>
-  <text x="410" y="374" class="label">Public Subnets</text>
-  <text x="410" y="394" class="small">10.0.3.0/24</text>
-  <text x="410" y="412" class="small">10.0.4.0/24</text>
+  <!-- Network edge -->
+  <rect x="570" y="560" width="286" height="556" class="zone-public"/>
+  <text x="602" y="604" class="label">Public Subnets</text>
+  <text x="602" y="630" class="small">10.0.3.0/24, 10.0.4.0/24</text>
 
-  <rect x="594" y="342" width="210" height="340" class="zone-app"/>
-  <text x="618" y="374" class="label">Private App Subnets</text>
-  <text x="618" y="394" class="small">ECS tasks run without public IPs</text>
+  <rect x="618" y="710" width="190" height="92" class="node"/>
+  <circle cx="664" cy="756" r="28" class="green"/>
+  <text x="664" y="756" class="badge">IGW</text>
+  <text x="710" y="748" class="card-title">Internet</text>
+  <text x="710" y="776" class="card-sub">Gateway</text>
 
-  <rect x="834" y="342" width="210" height="340" class="zone-data"/>
-  <text x="858" y="374" class="label">Private Data Subnets</text>
-  <text x="858" y="394" class="small">RDS subnet group</text>
+  <rect x="618" y="842" width="190" height="106" class="node"/>
+  <circle cx="664" cy="895" r="28" class="blue"/>
+  <text x="664" y="895" class="badge">ALB</text>
+  <text x="710" y="878" class="card-title">Application</text>
+  <text x="710" y="906" class="card-title">Load Balancer</text>
+  <text x="710" y="932" class="card-sub">:80 / optional :443</text>
 
-  <!-- VPC nodes -->
-  <rect x="410" y="454" width="130" height="64" class="node"/>
-  <circle cx="440" cy="486" r="19" class="green"/>
-  <text x="440" y="486" class="icon">IGW</text>
-  <text x="464" y="481" class="node-title">Internet</text>
-  <text x="464" y="500" class="node-sub">Gateway</text>
+  <rect x="618" y="988" width="190" height="92" class="node"/>
+  <circle cx="664" cy="1034" r="28" class="green"/>
+  <text x="664" y="1034" class="badge">NAT</text>
+  <text x="710" y="1026" class="card-title">NAT</text>
+  <text x="710" y="1054" class="card-sub">Gateway</text>
 
-  <rect x="410" y="574" width="130" height="64" class="node"/>
-  <circle cx="440" cy="606" r="19" class="green"/>
-  <text x="440" y="606" class="icon">ALB</text>
-  <text x="464" y="601" class="node-title">Application</text>
-  <text x="464" y="620" class="node-sub">Load Balancer</text>
+  <!-- Application tier -->
+  <rect x="910" y="560" width="342" height="556" class="zone-app"/>
+  <text x="942" y="604" class="label">Private App Subnets</text>
+  <text x="942" y="630" class="small">10.0.5.0/24, 10.0.6.0/24</text>
 
-  <rect x="410" y="716" width="130" height="64" class="node"/>
-  <circle cx="440" cy="748" r="19" class="green"/>
-  <text x="440" y="748" class="icon">NAT</text>
-  <text x="464" y="743" class="node-title">NAT</text>
-  <text x="464" y="762" class="node-sub">Gateway</text>
+  <rect x="964" y="688" width="234" height="100" class="node"/>
+  <circle cx="1012" cy="738" r="30" class="orange"/>
+  <text x="1012" y="738" class="badge">ECS</text>
+  <text x="1062" y="730" class="card-title">ECS Cluster</text>
+  <text x="1062" y="758" class="card-sub">Fargate launch type</text>
 
-  <rect x="634" y="454" width="132" height="64" class="node"/>
-  <circle cx="664" cy="486" r="19" class="orange"/>
-  <text x="664" y="486" class="icon">ECS</text>
-  <text x="688" y="481" class="node-title">ECS Cluster</text>
-  <text x="688" y="500" class="node-sub">Fargate</text>
+  <rect x="964" y="842" width="234" height="124" class="node"/>
+  <circle cx="1012" cy="904" r="30" class="orange"/>
+  <text x="1012" y="904" class="badge">APP</text>
+  <text x="1062" y="884" class="card-title">Rails Web Task</text>
+  <text x="1062" y="912" class="card-sub">Container :3000</text>
+  <text x="1062" y="940" class="card-sub">Desired count 1+</text>
 
-  <rect x="634" y="574" width="132" height="76" class="node"/>
-  <circle cx="664" cy="612" r="19" class="orange"/>
-  <text x="664" y="612" class="icon">APP</text>
-  <text x="688" y="601" class="node-title">Rails Web Task</text>
-  <text x="688" y="620" class="node-sub">Container :3000</text>
-  <text x="688" y="638" class="node-sub">Desired count 1+</text>
+  <rect x="964" y="1014" width="234" height="92" class="node"/>
+  <circle cx="1012" cy="1060" r="30" class="green"/>
+  <text x="1012" y="1060" class="badge">LOG</text>
+  <text x="1062" y="1052" class="card-title">VPC Flow Logs</text>
+  <text x="1062" y="1080" class="card-sub">All traffic</text>
 
-  <rect x="870" y="574" width="138" height="76" class="node"/>
-  <circle cx="900" cy="612" r="19" class="purple"/>
-  <text x="900" y="612" class="icon">RDS</text>
-  <text x="924" y="601" class="node-title">RDS PostgreSQL</text>
-  <text x="924" y="620" class="node-sub">Multi-AZ</text>
-  <text x="924" y="638" class="node-sub">Encrypted</text>
+  <!-- Data tier -->
+  <rect x="1304" y="560" width="322" height="556" class="zone-data"/>
+  <text x="1336" y="604" class="label">Private Data Subnets</text>
+  <text x="1336" y="630" class="small">RDS subnet group</text>
 
-  <rect x="634" y="716" width="132" height="64" class="node"/>
-  <circle cx="664" cy="748" r="19" class="green"/>
-  <text x="664" y="748" class="icon">LOG</text>
-  <text x="688" y="743" class="node-title">VPC Flow</text>
-  <text x="688" y="762" class="node-sub">Logs</text>
+  <rect x="1362" y="842" width="206" height="124" class="node"/>
+  <circle cx="1412" cy="904" r="30" class="purple"/>
+  <text x="1412" y="904" class="badge">RDS</text>
+  <text x="1462" y="884" class="card-title">RDS PostgreSQL</text>
+  <text x="1462" y="912" class="card-sub">Multi-AZ</text>
+  <text x="1462" y="940" class="card-sub">Encrypted storage</text>
 
-  <!-- Regional support services -->
-  <rect x="1130" y="250" width="244" height="560" class="zone-support"/>
-  <text x="1154" y="284" class="label">Regional Services</text>
+  <!-- Regional services -->
+  <rect x="1758" y="426" width="468" height="806" class="zone-services"/>
+  <text x="1798" y="476" class="section-title">Regional Services</text>
+  <text x="1798" y="506" class="section-subtitle">Managed platform capabilities outside the VPC</text>
 
-  <rect x="1160" y="326" width="184" height="58" class="node"/>
-  <circle cx="1190" cy="355" r="18" class="orange"/>
-  <text x="1190" y="355" class="icon">ECR</text>
-  <text x="1214" y="350" class="node-title">Amazon ECR</text>
-  <text x="1214" y="369" class="node-sub">Immutable images</text>
+  <rect x="1816" y="566" width="336" height="86" class="node-soft"/>
+  <circle cx="1860" cy="609" r="26" class="orange"/>
+  <text x="1860" y="609" class="badge">ECR</text>
+  <text x="1904" y="601" class="card-title">Amazon ECR</text>
+  <text x="1904" y="629" class="card-sub">Immutable container images</text>
 
-  <rect x="1160" y="410" width="184" height="58" class="node"/>
-  <circle cx="1190" cy="439" r="18" class="red"/>
-  <text x="1190" y="439" class="icon">SEC</text>
-  <text x="1214" y="434" class="node-title">Secrets Manager</text>
-  <text x="1214" y="453" class="node-sub">DB credentials</text>
+  <rect x="1816" y="684" width="336" height="86" class="node-soft"/>
+  <circle cx="1860" cy="727" r="26" class="red"/>
+  <text x="1860" y="727" class="badge">SEC</text>
+  <text x="1904" y="719" class="card-title">Secrets Manager</text>
+  <text x="1904" y="747" class="card-sub">Database credentials</text>
 
-  <rect x="1160" y="494" width="184" height="58" class="node"/>
-  <circle cx="1190" cy="523" r="18" class="purple"/>
-  <text x="1190" y="523" class="icon">CW</text>
-  <text x="1214" y="518" class="node-title">CloudWatch</text>
-  <text x="1214" y="537" class="node-sub">Logs and alarms</text>
+  <rect x="1816" y="802" width="336" height="86" class="node-soft"/>
+  <circle cx="1860" cy="845" r="26" class="purple"/>
+  <text x="1860" y="845" class="badge">CW</text>
+  <text x="1904" y="837" class="card-title">CloudWatch</text>
+  <text x="1904" y="865" class="card-sub">Logs, metrics, alarms</text>
 
-  <rect x="1160" y="578" width="184" height="58" class="node"/>
-  <circle cx="1190" cy="607" r="18" class="green"/>
-  <text x="1190" y="607" class="icon">S3</text>
-  <text x="1214" y="602" class="node-title">S3 ALB Logs</text>
-  <text x="1214" y="621" class="node-sub">Access logs</text>
+  <rect x="1816" y="920" width="336" height="86" class="node-soft"/>
+  <circle cx="1860" cy="963" r="26" class="green"/>
+  <text x="1860" y="963" class="badge">S3</text>
+  <text x="1904" y="955" class="card-title">S3 ALB Logs</text>
+  <text x="1904" y="983" class="card-sub">Encrypted access logs</text>
 
-  <rect x="1160" y="662" width="184" height="58" class="node"/>
-  <circle cx="1190" cy="691" r="18" class="orange"/>
-  <text x="1190" y="691" class="icon">AS</text>
-  <text x="1214" y="686" class="node-title">Auto Scaling</text>
-  <text x="1214" y="705" class="node-sub">CPU, memory, requests</text>
+  <rect x="1816" y="1038" width="336" height="86" class="node-soft"/>
+  <circle cx="1860" cy="1081" r="26" class="orange"/>
+  <text x="1860" y="1081" class="badge">AS</text>
+  <text x="1904" y="1073" class="card-title">Application Auto Scaling</text>
+  <text x="1904" y="1101" class="card-sub">CPU, memory, request count</text>
 
-  <rect x="1160" y="746" width="184" height="58" class="node"/>
-  <circle cx="1190" cy="775" r="18" class="red"/>
-  <text x="1190" y="775" class="icon">ACM</text>
-  <text x="1214" y="770" class="node-title">ACM</text>
-  <text x="1214" y="789" class="node-sub">Optional TLS cert</text>
+  <rect x="1816" y="1156" width="336" height="86" class="node-soft"/>
+  <circle cx="1860" cy="1199" r="26" class="red"/>
+  <text x="1860" y="1199" class="badge">ACM</text>
+  <text x="1904" y="1191" class="card-title">ACM Certificate</text>
+  <text x="1904" y="1219" class="card-sub">Optional HTTPS listener</text>
 
-  <!-- Runtime flow -->
-  <path d="M238 226 H474 V574" class="line"/>
-  <text x="286" y="216" class="small">HTTP / HTTPS</text>
+  <!-- Main runtime path -->
+  <path d="M362 262 H664 V710" class="flow"/>
+  <text x="390" y="248" class="line-label">HTTP / HTTPS</text>
 
-  <path d="M540 606 H634" class="line"/>
-  <text x="560" y="596" class="small">target group :3000</text>
+  <path d="M664 802 V842" class="flow"/>
+  <text x="682" y="824" class="line-label">internet route</text>
 
-  <path d="M700 518 V574" class="line-thin"/>
-  <path d="M766 612 H870" class="line"/>
-  <text x="790" y="602" class="small">PostgreSQL 5432</text>
+  <path d="M808 895 H964" class="flow"/>
+  <text x="832" y="878" class="line-label">target group :3000</text>
 
-  <path d="M634 632 H566 V748 H540" class="line-muted"/>
-  <path d="M540 748 H410" class="line-muted"/>
-  <text x="552" y="739" class="small">private egress</text>
+  <path d="M1081 788 V842" class="flow-thin"/>
+  <path d="M1198 904 H1362" class="flow"/>
+  <text x="1224" y="886" class="line-label">PostgreSQL 5432</text>
+
+  <path d="M964 934 H842 V1034 H808" class="flow-soft"/>
+  <text x="842" y="1020" class="line-label">private egress</text>
 
   <!-- Service dependencies -->
-  <path d="M766 596 H1130 V439 H1160" class="line-thin"/>
-  <text x="892" y="429" class="small">read DB secret</text>
+  <path d="M1198 880 H1716 V727 H1816" class="flow-thin"/>
+  <text x="1454" y="710" class="line-label">read DB secret</text>
 
-  <path d="M766 622 H1112 V523 H1160" class="line-thin"/>
-  <path d="M766 748 H1112 V523" class="line-thin"/>
-  <path d="M1008 612 H1112 V523" class="line-thin"/>
-  <text x="938" y="513" class="small">logs / metrics</text>
+  <path d="M1198 924 H1716 V845 H1816" class="flow-thin"/>
+  <path d="M1568 904 H1716 V845" class="flow-thin"/>
+  <path d="M1198 1060 H1716 V845" class="flow-thin"/>
+  <text x="1478" y="828" class="line-label">logs and metrics</text>
 
-  <path d="M540 606 H1112 V607 H1160" class="line-thin"/>
-  <text x="880" y="596" class="small">ALB access logs</text>
+  <path d="M808 916 H1716 V963 H1816" class="flow-thin"/>
+  <text x="1390" y="948" class="line-label">ALB access logs</text>
 
-  <path d="M1160 691 H1088 V612 H766" class="line-thin"/>
-  <text x="986" y="682" class="small">adjust desired count</text>
+  <path d="M1816 1081 H1696 V904 H1198" class="flow-thin"/>
+  <text x="1478" y="1064" class="line-label">scale desired count</text>
 
-  <path d="M1160 775 H1088 V606 H540" class="line-muted"/>
-  <text x="912" y="765" class="small">optional HTTPS listener</text>
+  <path d="M1816 1199 H1696 V895 H808" class="flow-soft"/>
+  <text x="1390" y="1182" class="line-label">optional TLS</text>
 
-  <!-- Delivery flow -->
-  <path d="M238 440 H1160 V355" class="line-deploy"/>
-  <text x="500" y="430" class="small">build and push image</text>
+  <!-- Delivery path -->
+  <path d="M362 508 H1816 V609" class="flow-deploy"/>
+  <text x="762" y="492" class="deploy-label">build and push image</text>
 
-  <path d="M1160 355 H700 V454" class="line-deploy"/>
-  <text x="792" y="345" class="small">pull container image</text>
+  <path d="M1816 609 H1081 V688" class="flow-deploy"/>
+  <text x="1320" y="592" class="deploy-label">pull image</text>
 
-  <path d="M238 556 H314 V218 H350" class="line-deploy"/>
-  <text x="280" y="545" class="small">provision infrastructure</text>
+  <path d="M362 508 H1081 V842" class="flow-deploy"/>
+  <text x="706" y="536" class="deploy-label">register task definition and deploy</text>
 
-  <path d="M238 814 H350" class="line-muted"/>
-  <text x="264" y="804" class="small">local validation</text>
+  <path d="M362 656 H420 V222" class="flow-deploy"/>
+  <text x="390" y="642" class="deploy-label">terraform apply</text>
+
+  <path d="M362 1190 H462" class="flow-soft"/>
+  <text x="392" y="1174" class="line-label">local validation</text>
 
   <!-- Legend -->
-  <rect x="314" y="834" width="570" height="52" class="node"/>
-  <line x1="338" y1="852" x2="394" y2="852" class="line"/>
-  <text x="408" y="856" class="small">Runtime traffic / dependency</text>
-  <line x1="338" y1="874" x2="394" y2="874" class="line-deploy"/>
-  <text x="408" y="878" class="small">CI/CD and Terraform delivery</text>
-  <line x1="620" y1="852" x2="676" y2="852" class="line-muted"/>
-  <text x="690" y="856" class="small">Optional or local workflow</text>
+  <rect x="462" y="1262" width="980" height="70" class="node-soft"/>
+  <line x1="500" y1="1288" x2="580" y2="1288" class="flow"/>
+  <text x="604" y="1294" class="small">Runtime traffic / service dependency</text>
+  <line x1="500" y1="1314" x2="580" y2="1314" class="flow-deploy"/>
+  <text x="604" y="1320" class="small">CI/CD and Terraform delivery</text>
+  <line x1="1018" y1="1288" x2="1098" y2="1288" class="flow-soft"/>
+  <text x="1122" y="1294" class="small">Optional or local workflow</text>
 
-  <text x="48" y="944" class="subtitle">Static SVG companion to docs/architecture.eraser. Components correspond to Terraform resources in this repository.</text>
+  <text x="80" y="1432" class="subtitle">Static SVG companion to docs/architecture.eraser. Components reflect the Terraform resources and GitHub Actions workflow in this repository.</text>
 </svg>
